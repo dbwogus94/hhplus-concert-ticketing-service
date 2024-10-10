@@ -102,7 +102,7 @@
 > [!NOTE] 
 > 콘서트에 대기큐에 사용할 유저 토큰 발급 API
 
-- **URL:** `/v1/queue-tokens`
+- **URL:** `/v1/queue/tokens`
 - **Method:** `POST`
 - **Headers:**
     - `accept: application/json`
@@ -159,7 +159,7 @@
 > [!NOTE] 
 > 유저 토큰 상태를 조회 API 입니다.
 
-- **URL:** `/v1/queue-tokens`
+- **URL:** `/v1/queue/tokens`
 - **Method:** `GET`
 - **Headers:**
     - `Authorization: Bearer ${queueToken}`
