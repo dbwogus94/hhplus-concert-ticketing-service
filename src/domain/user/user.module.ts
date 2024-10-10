@@ -1,4 +1,9 @@
 import { Module } from '@nestjs/common';
+import { UserController } from './user.controller';
+import { PointModule } from './point/point.module';
 
-@Module({})
+@Module({
+  imports: [PointModule],
+  controllers: [UserController],
+})
 export class UserModule {}
