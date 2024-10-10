@@ -57,27 +57,49 @@ sequenceDiagram
 
 ```mermaid
 sequenceDiagram
-    autonumber
-    actor 사용자 as 사용자
-    participant API as API
-    participant 날짜 as 날짜
-    participant 대기열 as 대기열
-    participant 대기열 토큰 만료 스케줄러 as 대기열 토큰 만료 스케줄러
-    사용자 ->> API: 예약 가능한 날짜 조회 API 요청
-    Note over 사용자, API: Authorization에 토큰적재
-    API -> 날짜: 예약 가능한 날짜 조회
-    날짜 ->> 대기열: 대기열 상태값 조회
-    대기열 -->> 날짜: 대기열 상태값 조회
-    alt
-        날짜 -->> 사용자: 대기열 상태값이 EXPIRED일 경우 에러 응답
-    else
-        날짜 -->> API: 예약 가능한 날짜 조회 결과 반환
-        API -->> 사용자: 예약 가능한 날짜 조회 결과 반환
+    actor Client
+    participant Concert as 콘서트 서비스
+    participant Order as 주문 서비스
+    participant DB
+    %% note right of Client: .
+
+    %% 예약 가능 날짜 조회
+    Client->>+ Concert: "콘서트의 날짜 목록" 조회 요청
+    Concert->>+ DB: 콘서트의 날짜별 상태 조회
+    DB-->>- Concert: 데이터 리턴
+    Concert-->>- Client: "콘서트의 날짜 목록" 응답
+
+    %% 특정 날짜 예약 가능 좌석 조회
+    Client->>+ Concert: "선택한 날짜의 콘서트 좌석 목록" 조회 요청
+    Concert->>+ DB: 선택한 날짜의 콘서트 좌석 조회
+    DB-->>- Concert: 데이터 리턴
+    Concert-->>- Client: "선택한 날짜의 콘서트 좌석" 목록 응답
+
+    %% 좌석 예약 요청
+    Client->>+ Concert: "콘서트 좌석 예약" 요청
+    Concert->>+ DB: 좌석 예약 가능한 상태인지 확인
+    DB-->>- Concert: 데이터 리턴
+
+    alt "예약가능" 상태 라면? 
+        Concert->>+ DB: 좌석 상태 변경 ('예약가능' -> '임시예약')
+        DB-->>- Concert: 업데이트 확인
+        Concert-->> Client: "콘서트 좌석 예약" 성공 응답
+        %% Event
+        Concert->> Order: 주문 서비스에 주문 생성 알림
+        Order->>+ DB: 주문 "결제대기" 상태로 생성
+        DB-->>- Order: 생성 확인
+
+    else "임시예약" 또는 "예약완료" 상태 라면?
+        Concert-->>- Client: 예약 불가능한 상태라는 에러 응답
     end
 
-    rect rgba(0, 0, 255, .1)
-        대기열 토큰 만료 스케줄러 --> 대기열 토큰 만료 스케줄러: 대기열의 토큰 상태가 PROGRSS인 토큰 중 만료 시간값이 30분이 지났을 경우 EXPIRED로 업데이트
-    end
+    Client->>+Order: "예약한 좌석 결제" 요청
+    Order->> DB: 주문 확인
+    Order-->> Client: "예약한 좌석 결제" 완료 응답
+    %% Event
+    Order->>- Concert: 콘서트 서비스에 결제 완료 알림
+    Concert->>+ DB: 좌석 상태 변경 ('임시예약' -> '예약완료')
+    DB-->>-Concert: 상태 변경 확인
 ```
 
 ### 3. 결제 시퀀스 다이어그램
