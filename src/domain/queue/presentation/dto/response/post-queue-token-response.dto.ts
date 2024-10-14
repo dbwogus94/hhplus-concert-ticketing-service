@@ -11,5 +11,5 @@ export class PostQueueTokenResponse {
     description: '발급 시간',
     default: new Date(),
   })
-  dateTime: Date;
+  issuedAt: Date;
 }

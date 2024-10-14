@@ -19,7 +19,7 @@ export class QueueController {
   ): Promise<PostQueueTokenResponse> {
     return {
       queueToken: 'mock-queue-token',
-      dateTime: new Date('2023-06-01T10:00:00Z'),
+      issuedAt: new Date('2023-06-01T10:00:00Z'),
     };
   }
 
