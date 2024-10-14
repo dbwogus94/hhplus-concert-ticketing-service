@@ -1,11 +1,11 @@
 # 콘서트 예약 서비스
 
-
 ## 설계 및 참고 문서
 - [마일 스톤](https://github.com/users/dbwogus94/projects/3)
-- [시퀀스 다이어그램](docs/sequence.md)
-- [API 정의서](docs/api-spec.md)
-- [ERD 설계서](docs/erd.md)
+- [요구사항](docs/1-요구사항.md)
+- [시퀀스 다이어그램](docs/2-시퀀스다이어그램.md)
+- [API 정의서](docs/3-API-정의서.md)
+- [ERD 설계서](docs/4-ERD-정의서.md)
 
 
 ## 서버 환경
@@ -23,11 +23,12 @@
 src
 └── domain
     ├── concert           # 콘서트 서비스 모듈
-    │   └── performance
-    ├── order             # 주문 서비스 모듈
+    |   ├── performance
+    │   └── seat           
+    ├── reservation       # 예약 서비스 모듈
     │   └── payment
     ├── queue             # 대기열 서비스 모듈
-    └── user
-        └── point         # 유저 서비스 모듈
+    └── user              # 유저 서비스 모듈
+        └── point         
 ```
 
