@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { QueueController } from './queue.controller';
+import { QueueController } from './presentation/queue.controller';
 import { QueueService } from './queue.service';
 
 @Module({
