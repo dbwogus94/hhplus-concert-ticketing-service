@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { UserController } from './user.controller';
+import { UserController } from './presentation/user.controller';
 import { PointModule } from './point/point.module';
 
 @Module({
