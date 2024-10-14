@@ -8,14 +8,14 @@ title: 콘서트 예매 서비스
 ---
 
 erDiagram
-		%% 만료날짜는 이후 Redis의 TTL 기능...
+    %% 만료날짜는 이후 Redis의 TTL 기능...
     Queue {
         int id PK
-        int userId
         int concertId
         QueueStatus status
         datetime createdAt
         datetime expireAt
+        datetime activeAt
     }
 
     %% 콘서트 예약 서비스
@@ -31,7 +31,6 @@ erDiagram
         int concertId
         date openDate
         datetime startAt
-        PerformanceStatus status
     }
     Seat {
         int id PK
@@ -63,10 +62,10 @@ erDiagram
         string id PK
         string name
         string email
+        number pointId
     }
     Point {
         int id PK
-        int userId
         int amount
     }
     PointHistory {
