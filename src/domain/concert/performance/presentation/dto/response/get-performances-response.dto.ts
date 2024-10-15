@@ -1,3 +1,4 @@
+import { plainToInstance } from 'class-transformer';
 import {
   RestApiDateProperty,
   RestApiInstanceProperty,
@@ -5,6 +6,7 @@ import {
   RestApiStringProperty,
   WithTotolCountResponse,
 } from 'src/common';
+import { GetPerformancesInfo } from '../../../domain';
 
 export class GetPerformancesResponse {
   @RestApiIntProperty({
@@ -32,6 +34,15 @@ export class GetPerformancesResponse {
     default: new Date('2024-01-01 15:00:00'),
   })
   startAt: Date;
+
+  static of(info: GetPerformancesInfo): GetPerformancesResponse;
+  static of(info: GetPerformancesInfo[]): GetPerformancesResponse[];
+  static of(
+    info: GetPerformancesInfo | GetPerformancesInfo[],
+  ): GetPerformancesResponse | GetPerformancesResponse[] {
+    if (Array.isArray(info)) return info.map((i) => this.of(i));
+    return plainToInstance(GetPerformancesResponse, { info });
+  }
 }
 
 export class GetPerformancesWithTotolCountResponse extends WithTotolCountResponse {

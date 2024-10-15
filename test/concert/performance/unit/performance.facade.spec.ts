@@ -15,7 +15,7 @@ import {
   WriteReservationCommand,
 } from 'src/domain/concert/performance';
 
-describe('PerformanceService', () => {
+describe('PerformanceFacade', () => {
   let mockDataSource: MockProxy<DataSource>;
   let performanceRepo: MockProxy<PerformanceRepository>;
   let reservationRepo: MockProxy<ReservationRepository>;
@@ -113,6 +113,26 @@ describe('PerformanceService', () => {
 
   describe('reservationSeat', () => {
     describe('실패한다.', () => {
+      it.skip('TODO: 유저가 존재하지 않으면 실패힌다.', () => {
+        // given
+        const command = WriteReservationCommand.from({
+          userId: 1,
+          performanceId: 10,
+          seatId: 100,
+        });
+        const success = ResourceNotFoundException;
+
+        // mock
+        performanceRepo.getSeatBy.mockRejectedValue(
+          new ResourceNotFoundException(),
+        );
+
+        // when
+        const promiseResult = service.reservationSeat(command);
+        // then
+        expect(promiseResult).rejects.toBeInstanceOf(success);
+      });
+
       it('예약하려는 좌석이 존재하지 않으면 실패한다.', () => {
         // given
         const command = WriteReservationCommand.from({

@@ -25,14 +25,17 @@ export class PerformanceService {
     return GetPerformancesInfo.of(performances);
   }
 
-  async getPerformance(performanceId: number): Promise<GetPerformancesInfo> {
-    const performance =
-      await this.performanceRepo.getPerformanceBy(performanceId);
-    return GetPerformancesInfo.of(performance);
-  }
+  // async getPerformance(performanceId: number): Promise<GetPerformancesInfo> {
+  //   const performance =
+  //     await this.performanceRepo.getPerformanceBy(performanceId);
+  //   return GetPerformancesInfo.of(performance);
+  // }
 
-  async getSeats(performanceId: number): Promise<GetSeatsInfo[]> {
-    const seats = await this.performanceRepo.getSeatsBy(performanceId);
+  async getAvailableSeats(performanceId: number): Promise<GetSeatsInfo[]> {
+    const seats = await this.performanceRepo.getSeatsBy(
+      performanceId,
+      SeatStatus.AVAILABLE,
+    );
     return GetSeatsInfo.of(seats);
   }
 

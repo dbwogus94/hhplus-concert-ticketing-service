@@ -1,3 +1,4 @@
+import { plainToInstance } from 'class-transformer';
 import { RestApiIntProperty } from 'src/common';
 
 export class PostSeatReservationResponse {
@@ -6,4 +7,8 @@ export class PostSeatReservationResponse {
     default: 1,
   })
   reservationId: number;
+
+  static of(info: { reservationId: number }): PostSeatReservationResponse {
+    return plainToInstance(PostSeatReservationResponse, { info });
+  }
 }

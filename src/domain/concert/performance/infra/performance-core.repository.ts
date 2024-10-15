@@ -37,9 +37,12 @@ export class PerformanceCoreRepository extends PerformanceRepository {
     return performance;
   }
 
-  override async getSeatsBy(performanceId: number): Promise<SeatEntity[]> {
+  override async getSeatsBy(
+    performanceId: number,
+    status: SeatStatus,
+  ): Promise<SeatEntity[]> {
     return await this.seatRepo.find({
-      where: { performanceId },
+      where: { performanceId, status },
       order: { id: 'DESC' },
     });
   }

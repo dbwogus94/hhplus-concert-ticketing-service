@@ -8,10 +8,12 @@ import {
   ReservationCoreRepository,
   ReservationRepository,
 } from './infra';
+import { PerformanceFacade } from './application';
 
 @Module({
   controllers: [PerformanceController],
   providers: [
+    PerformanceFacade,
     PerformanceService,
     {
       provide: PerformanceRepository,

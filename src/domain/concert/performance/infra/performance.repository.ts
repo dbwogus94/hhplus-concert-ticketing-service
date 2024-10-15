@@ -5,7 +5,10 @@ export abstract class PerformanceRepository extends BaseRepository<PerformanceEn
   abstract getPerformancesBy(concertId: number): Promise<PerformanceEntity[]>;
   abstract getPerformanceBy(performanceId: number): Promise<PerformanceEntity>;
 
-  abstract getSeatsBy(performanceId: number): Promise<SeatEntity[]>;
+  abstract getSeatsBy(
+    performanceId: number,
+    status: SeatStatus,
+  ): Promise<SeatEntity[]>;
   abstract getSeatBy(performanceId: number): Promise<SeatEntity>;
   abstract updateSeatStatus(seatId: number, status: SeatStatus): Promise<void>;
 }
