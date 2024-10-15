@@ -2,11 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
 
-import { PerformanceEntity, SeatEntity } from '../domain';
-import {
-  FindSeatOptions,
-  PerformanceRepository,
-} from './performance.repository';
+import { PerformanceEntity, SeatEntity, SeatStatus } from '../domain';
+import { PerformanceRepository } from './performance.repository';
 import { ResourceNotFoundException } from 'src/common';
 
 @Injectable()
@@ -26,27 +23,40 @@ export class PerformanceCoreRepository extends PerformanceRepository {
   ): Promise<PerformanceEntity[]> {
     return await this.find({
       where: { concertId },
-      order: { concertId: 'DESC' },
+      order: { id: 'DESC' },
     });
+  }
+
+  override async getPerformanceBy(
+    performanceId: number,
+  ): Promise<PerformanceEntity> {
+    const performance = await this.findOne({
+      where: { id: performanceId },
+    });
+    if (!performance) throw new ResourceNotFoundException();
+    return performance;
   }
 
   override async getSeatsBy(performanceId: number): Promise<SeatEntity[]> {
     return await this.seatRepo.find({
       where: { performanceId },
-      order: { performanceId: 'DESC' },
+      order: { id: 'DESC' },
     });
   }
 
-  override async getSeatBy(
-    performanceId: number,
-    options: FindSeatOptions = {},
-  ): Promise<SeatEntity> {
+  override async getSeatBy(performanceId: number): Promise<SeatEntity> {
     const seat = await this.seatRepo.findOne({
       where: { performanceId },
-      lock: { mode: options.lock },
     });
 
     if (!seat) throw new ResourceNotFoundException();
     return seat;
+  }
+
+  override async updateSeatStatus(
+    seatId: number,
+    status: SeatStatus,
+  ): Promise<void> {
+    await this.seatRepo.save({ id: seatId, status });
   }
 }

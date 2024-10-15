@@ -1,15 +1,11 @@
 import { BaseRepository } from 'src/common';
-import { PerformanceEntity, SeatEntity } from '../domain';
-
-export type FindSeatOptions = {
-  lock?: 'pessimistic_read' | 'pessimistic_write';
-};
+import { PerformanceEntity, SeatEntity, SeatStatus } from '../domain';
 
 export abstract class PerformanceRepository extends BaseRepository<PerformanceEntity> {
   abstract getPerformancesBy(concertId: number): Promise<PerformanceEntity[]>;
+  abstract getPerformanceBy(performanceId: number): Promise<PerformanceEntity>;
+
   abstract getSeatsBy(performanceId: number): Promise<SeatEntity[]>;
-  abstract getSeatBy(
-    performanceId: number,
-    options?: FindSeatOptions,
-  ): Promise<SeatEntity>;
+  abstract getSeatBy(performanceId: number): Promise<SeatEntity>;
+  abstract updateSeatStatus(seatId: number, status: SeatStatus): Promise<void>;
 }
