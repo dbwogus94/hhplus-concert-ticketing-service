@@ -13,11 +13,11 @@ import { GetUserInfoDecorator } from 'src/common';
 import { DocumentHelper } from './document';
 import {
   GetPerformancesQuery,
-  GetPerformancesWithTotolCountResponse,
   GetSeatsQuery,
   PostSeatReservationResponse,
+  GetPerformancesWithTotolCountResponse,
+  GetSeatsWithTotolCountResponse,
 } from './dto';
-import { GetSeatsWithTotolCountResponse } from './dto/response/get-seats-response.dto';
 
 @ApiTags('공연 API')
 @Controller('/performances')
@@ -35,7 +35,7 @@ export class PerformanceController {
         {
           id: 1,
           concertId: query.concertId,
-          openDate: new Date('2024-01-01'),
+          openDate: '2024-01-01',
           startAt: new Date('2024-01-01 15:00:00'),
         },
       ],

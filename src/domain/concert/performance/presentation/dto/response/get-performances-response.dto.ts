@@ -2,6 +2,7 @@ import {
   RestApiDateProperty,
   RestApiInstanceProperty,
   RestApiIntProperty,
+  RestApiStringProperty,
   WithTotolCountResponse,
 } from 'src/common';
 
@@ -20,11 +21,11 @@ export class GetPerformancesResponse {
   })
   concertId: number;
 
-  @RestApiDateProperty({
-    description: '공연 오픈일',
-    default: new Date('2024-01-01 00:00:00'),
+  @RestApiStringProperty({
+    description: '공연 오픈일(YYYY-MM-DD)',
+    default: '2024-01-01',
   })
-  openDate: Date;
+  openDate: string;
 
   @RestApiDateProperty({
     description: '공연 시작 시간',
