@@ -1,9 +1,12 @@
+import { plainToInstance } from 'class-transformer';
 import {
   RestApiDateProperty,
   RestApiInstanceProperty,
   RestApiIntProperty,
+  RestApiStringProperty,
   WithTotolCountResponse,
 } from 'src/common';
+import { GetPerformancesInfo } from '../../../domain';
 
 export class GetPerformancesResponse {
   @RestApiIntProperty({
@@ -20,17 +23,26 @@ export class GetPerformancesResponse {
   })
   concertId: number;
 
-  @RestApiDateProperty({
-    description: '공연 오픈일',
-    default: new Date('2024-01-01 00:00:00'),
+  @RestApiStringProperty({
+    description: '공연 오픈일(YYYY-MM-DD)',
+    default: '2024-01-01',
   })
-  openDate: Date;
+  openDate: string;
 
   @RestApiDateProperty({
     description: '공연 시작 시간',
     default: new Date('2024-01-01 15:00:00'),
   })
   startAt: Date;
+
+  static of(info: GetPerformancesInfo): GetPerformancesResponse;
+  static of(info: GetPerformancesInfo[]): GetPerformancesResponse[];
+  static of(
+    info: GetPerformancesInfo | GetPerformancesInfo[],
+  ): GetPerformancesResponse | GetPerformancesResponse[] {
+    if (Array.isArray(info)) return info.map((i) => this.of(i));
+    return plainToInstance(GetPerformancesResponse, { info });
+  }
 }
 
 export class GetPerformancesWithTotolCountResponse extends WithTotolCountResponse {

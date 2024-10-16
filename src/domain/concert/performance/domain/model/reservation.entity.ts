@@ -6,7 +6,7 @@ import { ReservationStatus } from './enum';
 @Entity('reservation')
 export class ReservationEntity extends BaseEntity {
   @Column('int')
-  userId: string;
+  userId: number;
 
   @Column('int')
   seatId: number;

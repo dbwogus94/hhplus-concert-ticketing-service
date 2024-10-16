@@ -4,7 +4,8 @@ import {
   RestApiIntProperty,
   WithTotolCountResponse,
 } from 'src/common';
-import { SeatStatus } from '../../../domain';
+import { GetSeatsInfo, SeatStatus } from '../../../domain';
+import { plainToInstance } from 'class-transformer';
 
 export class GetSeatsResponse {
   @RestApiIntProperty({
@@ -38,6 +39,15 @@ export class GetSeatsResponse {
     default: SeatStatus.AVAILABLE,
   })
   status: SeatStatus;
+
+  static of(info: GetSeatsInfo): GetSeatsResponse;
+  static of(info: GetSeatsInfo[]): GetSeatsResponse[];
+  static of(
+    info: GetSeatsInfo | GetSeatsInfo[],
+  ): GetSeatsResponse | GetSeatsResponse[] {
+    if (Array.isArray(info)) return info.map((i) => this.of(i));
+    return plainToInstance(GetSeatsResponse, { info });
+  }
 }
 
 export class GetSeatsWithTotolCountResponse extends WithTotolCountResponse {

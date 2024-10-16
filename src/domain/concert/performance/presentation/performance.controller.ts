@@ -13,15 +13,20 @@ import { GetUserInfoDecorator } from 'src/common';
 import { DocumentHelper } from './document';
 import {
   GetPerformancesQuery,
-  GetPerformancesWithTotolCountResponse,
-  GetSeatsQuery,
   PostSeatReservationResponse,
+  GetPerformancesWithTotolCountResponse,
+  GetSeatsWithTotolCountResponse,
+  GetPerformancesResponse,
+  GetSeatsResponse,
 } from './dto';
-import { GetSeatsWithTotolCountResponse } from './dto/response/get-seats-response.dto';
+import { PerformanceFacade } from '../application';
+import { WriteReservationCommand } from '../domain';
 
 @ApiTags('공연 API')
 @Controller('/performances')
 export class PerformanceController {
+  constructor(private readonly performanceFacade: PerformanceFacade) {}
+
   //
   @DocumentHelper('getPerformances')
   @Get('/performances')
@@ -29,16 +34,12 @@ export class PerformanceController {
   async getPerformances(
     @Query() query: GetPerformancesQuery,
   ): Promise<GetPerformancesWithTotolCountResponse> {
+    const performances = await this.performanceFacade.getPerformances(
+      query.concertId,
+    );
     return {
-      totalCount: 30,
-      results: [
-        {
-          id: 1,
-          concertId: query.concertId,
-          openDate: new Date('2024-01-01'),
-          startAt: new Date('2024-01-01 15:00:00'),
-        },
-      ],
+      totalCount: performances.length,
+      results: GetPerformancesResponse.of(performances),
     };
   }
 
@@ -47,19 +48,11 @@ export class PerformanceController {
   @HttpCode(200)
   async getSeats(
     @Param('performanceId', ParseIntPipe) performanceId: number,
-    @Query() query: GetSeatsQuery,
   ): Promise<GetSeatsWithTotolCountResponse> {
+    const seats = await this.performanceFacade.getAvailableSeats(performanceId);
     return {
-      totalCount: 30,
-      results: [
-        {
-          id: 1,
-          performanceId,
-          position: 13,
-          amount: 50000,
-          status: query.status,
-        },
-      ],
+      totalCount: seats.length,
+      results: GetSeatsResponse.of(seats),
     };
   }
 
@@ -71,6 +64,13 @@ export class PerformanceController {
     @Param('seatId', ParseIntPipe) seatId: number,
     @GetUserInfoDecorator('userId') userId: number,
   ): Promise<PostSeatReservationResponse> {
-    return { reservationId: 1 };
+    const reservationId = await this.performanceFacade.reservationSeat(
+      WriteReservationCommand.from({
+        userId,
+        seatId,
+        performanceId,
+      }),
+    );
+    return PostSeatReservationResponse.of({ reservationId });
   }
 }
