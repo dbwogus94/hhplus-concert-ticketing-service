@@ -1,35 +1,23 @@
-import { faker } from '@faker-js/faker';
 import { type MockProxy, mock } from 'jest-mock-extended';
-import { DataSource } from 'typeorm';
 
 import { ConflictStatusException, ResourceNotFoundException } from 'src/common';
 import {
   GetPerformancesInfo,
   GetSeatsInfo,
-  PerformanceEntity,
-  PerformanceRepository,
+  PerformanceFacade,
   PerformanceService,
-  ReservationRepository,
-  SeatEntity,
   SeatStatus,
   WriteReservationCommand,
 } from 'src/domain/concert/performance';
+import { MockEntityGenerator } from 'test/fixture';
 
 describe('PerformanceFacade', () => {
-  let mockDataSource: MockProxy<DataSource>;
-  let performanceRepo: MockProxy<PerformanceRepository>;
-  let reservationRepo: MockProxy<ReservationRepository>;
-  let service: PerformanceService;
+  let performanceService: MockProxy<PerformanceService>;
+  let facade: PerformanceFacade;
 
   beforeEach(() => {
-    mockDataSource = mock<DataSource>();
-    performanceRepo = mock<PerformanceRepository>();
-    reservationRepo = mock<ReservationRepository>();
-    service = new PerformanceService(
-      mockDataSource,
-      performanceRepo,
-      reservationRepo,
-    );
+    performanceService = mock<PerformanceService>();
+    facade = new PerformanceFacade(performanceService);
   });
 
   describe('getPerformances', () => {
@@ -39,10 +27,10 @@ describe('PerformanceFacade', () => {
         const concertId = 10;
         const success = 0;
 
-        performanceRepo.getPerformancesBy.mockResolvedValue([]);
+        performanceService.getPerformances.mockResolvedValue([]);
 
         // when
-        const results = await service.getPerformances(concertId);
+        const results = await facade.getPerformances(concertId);
 
         // then
         expect(results.length).toBe(success);
@@ -52,16 +40,14 @@ describe('PerformanceFacade', () => {
         // give
         const concertId = 10;
         const performanceEntities = Array.from({ length: 10 }, (_, i) =>
-          createRandomPerformance(i + 1, concertId),
+          MockEntityGenerator.generatePerformance(i + 1, concertId),
         );
         const success = GetPerformancesInfo.of(performanceEntities);
-
-        performanceRepo.getPerformancesBy.mockResolvedValue(
-          performanceEntities,
-        );
+        // mock
+        performanceService.getPerformances.mockResolvedValue(success);
 
         // when
-        const results = await service.getPerformances(concertId);
+        const results = await facade.getPerformances(concertId);
 
         // then
         expect(results.length).toBe(success.length);
@@ -78,10 +64,10 @@ describe('PerformanceFacade', () => {
         const success = 0;
 
         // mock
-        performanceRepo.getSeatsBy.mockResolvedValue([]);
+        performanceService.getAvailableSeats.mockResolvedValue([]);
 
         // when
-        const results = await service.getAvailableSeats(performanceId);
+        const results = await facade.getAvailableSeats(performanceId);
 
         // then
         expect(results.length).toBe(success);
@@ -91,15 +77,15 @@ describe('PerformanceFacade', () => {
         // give
         const performanceId = 10;
         const seatEntities = Array.from({ length: 50 }, (_, i) =>
-          createRandomSeat(i + 1, performanceId),
+          MockEntityGenerator.generateSeat(i + 1, performanceId),
         );
         const success = GetSeatsInfo.of(seatEntities);
 
         // mock
-        performanceRepo.getSeatsBy.mockResolvedValue(seatEntities);
+        performanceService.getAvailableSeats.mockResolvedValue(success);
 
         // when
-        const results = await service.getAvailableSeats(performanceId);
+        const results = await facade.getAvailableSeats(performanceId);
 
         // then
         expect(results.length).toBe(success.length);
@@ -113,7 +99,7 @@ describe('PerformanceFacade', () => {
 
   describe('reservationSeat', () => {
     describe('실패한다.', () => {
-      it.skip('TODO: 유저가 존재하지 않으면 실패힌다.', () => {
+      it('TODO: 유저가 존재하지 않으면 실패힌다.', async () => {
         // given
         const command = WriteReservationCommand.from({
           userId: 1,
@@ -123,17 +109,21 @@ describe('PerformanceFacade', () => {
         const success = ResourceNotFoundException;
 
         // mock
-        performanceRepo.getSeatBy.mockRejectedValue(
+        performanceService.reservationSeat.mockRejectedValue(
           new ResourceNotFoundException(),
         );
 
-        // when
-        const promiseResult = service.reservationSeat(command);
-        // then
-        expect(promiseResult).rejects.toBeInstanceOf(success);
+        // when & then
+        try {
+          // when
+          await facade.reservationSeat(command);
+        } catch (error) {
+          // then
+          expect(error).toBeInstanceOf(success);
+        }
       });
 
-      it('예약하려는 좌석이 존재하지 않으면 실패한다.', () => {
+      it('예약하려는 좌석이 존재하지 않으면 실패한다.', async () => {
         // given
         const command = WriteReservationCommand.from({
           userId: 1,
@@ -143,60 +133,64 @@ describe('PerformanceFacade', () => {
         const success = ResourceNotFoundException;
 
         // mock
-        performanceRepo.getSeatBy.mockRejectedValue(
+        performanceService.reservationSeat.mockRejectedValue(
           new ResourceNotFoundException(),
         );
 
-        // when
-        const promiseResult = service.reservationSeat(command);
-        // then
-        expect(promiseResult).rejects.toBeInstanceOf(success);
+        // when & then
+        try {
+          // when
+          await facade.reservationSeat(command);
+        } catch (error) {
+          // then
+          expect(error).toBeInstanceOf(success);
+        }
       });
 
-      it('예약하려는 좌석이 "임시예약" 상태면 실패한다.', () => {
+      it('예약하려는 좌석이 "임시예약" 상태면 실패한다.', async () => {
         // given
         const command = WriteReservationCommand.from({
           userId: 1,
           performanceId: 10,
           seatId: 15,
         });
-        const seatEntity = createRandomSeat(
-          command.seatId,
-          command.performanceId,
-        );
-        seatEntity.status = SeatStatus.RESERVED;
         const success = ConflictStatusException;
 
         // mock
-        performanceRepo.getSeatBy.mockResolvedValue(seatEntity);
+        performanceService.reservationSeat.mockRejectedValue(
+          new ConflictStatusException(),
+        );
 
-        // when
-        const promiseResult = service.reservationSeat(command);
-        // then
-        expect(promiseResult).rejects.toBeInstanceOf(success);
+        try {
+          // when
+          await facade.reservationSeat(command);
+        } catch (error) {
+          // then
+          expect(error).toBeInstanceOf(success);
+        }
       });
 
-      it('예약하려는 좌석이 "예약완료" 상태가면 실패한다.', () => {
+      it('예약하려는 좌석이 "예약완료" 상태가면 실패한다.', async () => {
         // given
         const command = WriteReservationCommand.from({
           userId: 1,
           performanceId: 10,
           seatId: 15,
         });
-        const seatEntity = createRandomSeat(
-          command.seatId,
-          command.performanceId,
-        );
-        seatEntity.status = SeatStatus.BOOKED;
         const success = ConflictStatusException;
 
         // mock
-        performanceRepo.getSeatBy.mockResolvedValue(seatEntity);
+        performanceService.reservationSeat.mockRejectedValue(
+          new ConflictStatusException(),
+        );
 
-        // when
-        const promiseResult = service.reservationSeat(command);
-        // then
-        expect(promiseResult).rejects.toBeInstanceOf(success);
+        try {
+          // when
+          await facade.reservationSeat(command);
+        } catch (error) {
+          // then
+          expect(error).toBeInstanceOf(success);
+        }
       });
     });
 
@@ -208,62 +202,27 @@ describe('PerformanceFacade', () => {
           performanceId: 10,
           seatId: 15,
         });
-        const seatEntity = createRandomSeat(
-          command.seatId,
-          command.performanceId,
-        );
-        seatEntity.status = SeatStatus.AVAILABLE;
-
         const newReservationId = 1;
         const success = newReservationId;
 
         // mock
-        performanceRepo.getSeatBy.mockResolvedValue(seatEntity);
-
-        // mock transaction
-        mockDataSource.transaction.mockImplementation(async (cb) =>
-          cb(mockDataSource),
-        );
-        performanceRepo.createTransactionRepo.mockReturnValue(performanceRepo);
-        reservationRepo.createTransactionRepo.mockReturnValue(reservationRepo);
-
-        performanceRepo.updateSeatStatus.mockResolvedValue();
-        reservationRepo.insertOne.mockResolvedValue(newReservationId);
+        performanceService.reservationSeat.mockResolvedValue(newReservationId);
 
         // when
-        const results = await service.reservationSeat(command);
+        const results = await facade.reservationSeat(command);
 
         // then
         expect(results).toBe(success);
       });
+
+      describe('만료한다.', () => {
+        it.skip('TODO: 좌석 임시예약에 성공하면 토큰이 만료된다.', async () => {
+          // given
+          // mock
+          // when
+          // then
+        });
+      });
     });
   });
 });
-
-function createRandomPerformance(
-  id: number,
-  concertId: number,
-): PerformanceEntity {
-  const performance = new PerformanceEntity();
-  performance.id = id;
-  performance.createdAt = new Date();
-  performance.updatedAt = new Date();
-  performance.openDate = faker.date.future().toISOString().split('T')[0];
-  performance.startAt = faker.date.future();
-  performance.concertId = concertId;
-  return performance;
-}
-
-function createRandomSeat(id: number, performanceId: number): SeatEntity {
-  const seat = new SeatEntity();
-  const randomPosition = () => faker.number.int({ min: 1, max: 50 });
-
-  seat.id = id;
-  seat.createdAt = new Date();
-  seat.updatedAt = new Date();
-  seat.position = randomPosition();
-  seat.amount = 50_000;
-  seat.status = SeatStatus.AVAILABLE;
-  seat.performanceId = performanceId;
-  return seat;
-}
