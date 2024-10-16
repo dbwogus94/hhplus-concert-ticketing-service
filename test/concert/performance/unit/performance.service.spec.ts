@@ -111,7 +111,7 @@ describe('PerformanceService', () => {
 
   describe('reservationSeat', () => {
     describe('실패한다.', () => {
-      it('예약하려는 좌석이 존재하지 않으면 실패한다.', () => {
+      it('예약하려는 좌석이 존재하지 않으면 실패한다.', async () => {
         // given
         const command = WriteReservationCommand.from({
           userId: 1,
@@ -125,13 +125,12 @@ describe('PerformanceService', () => {
           new ResourceNotFoundException(),
         );
 
-        // when
-        const promiseResult = service.reservationSeat(command);
-        // then
-        expect(promiseResult).rejects.toBeInstanceOf(success);
+        // when & then
+        await expect(service.reservationSeat(command)) //
+          .rejects.toBeInstanceOf(success);
       });
 
-      it('예약하려는 좌석이 "임시예약" 상태면 실패한다.', () => {
+      it('예약하려는 좌석이 "임시예약" 상태면 실패한다.', async () => {
         // given
         const command = WriteReservationCommand.from({
           userId: 1,
@@ -148,13 +147,12 @@ describe('PerformanceService', () => {
         // mock
         performanceRepo.getSeatBy.mockResolvedValue(seatEntity);
 
-        // when
-        const promiseResult = service.reservationSeat(command);
-        // then
-        expect(promiseResult).rejects.toBeInstanceOf(success);
+        // when & then
+        await expect(service.reservationSeat(command)) //
+          .rejects.toBeInstanceOf(success);
       });
 
-      it('예약하려는 좌석이 "예약완료" 상태가면 실패한다.', () => {
+      it('예약하려는 좌석이 "예약완료" 상태가면 실패한다.', async () => {
         // given
         const command = WriteReservationCommand.from({
           userId: 1,
@@ -171,10 +169,9 @@ describe('PerformanceService', () => {
         // mock
         performanceRepo.getSeatBy.mockResolvedValue(seatEntity);
 
-        // when
-        const promiseResult = service.reservationSeat(command);
-        // then
-        expect(promiseResult).rejects.toBeInstanceOf(success);
+        // when & then
+        await expect(service.reservationSeat(command)) //
+          .rejects.toBeInstanceOf(success);
       });
     });
 
