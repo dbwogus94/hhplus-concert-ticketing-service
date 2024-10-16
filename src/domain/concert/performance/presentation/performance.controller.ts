@@ -49,7 +49,7 @@ export class PerformanceController {
   async getSeats(
     @Param('performanceId', ParseIntPipe) performanceId: number,
   ): Promise<GetSeatsWithTotolCountResponse> {
-    const seats = await this.performanceFacade.getSeats(performanceId);
+    const seats = await this.performanceFacade.getAvailableSeats(performanceId);
     return {
       totalCount: seats.length,
       results: GetSeatsResponse.of(seats),

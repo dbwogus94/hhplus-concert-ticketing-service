@@ -15,17 +15,18 @@ export class PerformanceFacade {
       await this.performanceService.getPerformances(concertId);
     return performances;
   }
-  async getSeats(performanceId: number): Promise<GetSeatsInfo[]> {
+  async getAvailableSeats(performanceId: number): Promise<GetSeatsInfo[]> {
     const seats =
       await this.performanceService.getAvailableSeats(performanceId);
     return seats;
   }
 
   async reservationSeat(command: WriteReservationCommand): Promise<number> {
-    // TODO: user 서비스 개발하고 검증 넣어야 함
+    // TODO: user 검증 로직
 
     const reservationId =
       await this.performanceService.reservationSeat(command);
+    // TODO: wait-queue 토큰 만료 로직
     return reservationId;
   }
 }
