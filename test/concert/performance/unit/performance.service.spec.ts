@@ -1,4 +1,3 @@
-import { faker } from '@faker-js/faker';
 import { type MockProxy, mock } from 'jest-mock-extended';
 import { DataSource } from 'typeorm';
 
@@ -6,14 +5,13 @@ import { ConflictStatusException, ResourceNotFoundException } from 'src/common';
 import {
   GetPerformancesInfo,
   GetSeatsInfo,
-  PerformanceEntity,
   PerformanceRepository,
   PerformanceService,
   ReservationRepository,
-  SeatEntity,
   SeatStatus,
   WriteReservationCommand,
 } from 'src/domain/concert/performance';
+import { MockEntityGenerator } from 'test/fixture';
 
 describe('PerformanceService', () => {
   let mockDataSource: MockProxy<DataSource>;
@@ -52,7 +50,7 @@ describe('PerformanceService', () => {
         // give
         const concertId = 10;
         const performanceEntities = Array.from({ length: 10 }, (_, i) =>
-          createRandomPerformance(i + 1, concertId),
+          MockEntityGenerator.generatePerformance(i + 1, concertId),
         );
         const success = GetPerformancesInfo.of(performanceEntities);
 
@@ -91,7 +89,7 @@ describe('PerformanceService', () => {
         // give
         const performanceId = 10;
         const seatEntities = Array.from({ length: 50 }, (_, i) =>
-          createRandomSeat(i + 1, performanceId),
+          MockEntityGenerator.generateSeat(i + 1, performanceId),
         );
         const success = GetSeatsInfo.of(seatEntities);
 
@@ -140,7 +138,7 @@ describe('PerformanceService', () => {
           performanceId: 10,
           seatId: 15,
         });
-        const seatEntity = createRandomSeat(
+        const seatEntity = MockEntityGenerator.generateSeat(
           command.seatId,
           command.performanceId,
         );
@@ -163,7 +161,7 @@ describe('PerformanceService', () => {
           performanceId: 10,
           seatId: 15,
         });
-        const seatEntity = createRandomSeat(
+        const seatEntity = MockEntityGenerator.generateSeat(
           command.seatId,
           command.performanceId,
         );
@@ -188,7 +186,7 @@ describe('PerformanceService', () => {
           performanceId: 10,
           seatId: 15,
         });
-        const seatEntity = createRandomSeat(
+        const seatEntity = MockEntityGenerator.generateSeat(
           command.seatId,
           command.performanceId,
         );
@@ -219,31 +217,3 @@ describe('PerformanceService', () => {
     });
   });
 });
-
-function createRandomPerformance(
-  id: number,
-  concertId: number,
-): PerformanceEntity {
-  const performance = new PerformanceEntity();
-  performance.id = id;
-  performance.createdAt = new Date();
-  performance.updatedAt = new Date();
-  performance.openDate = faker.date.future().toISOString().split('T')[0];
-  performance.startAt = faker.date.future();
-  performance.concertId = concertId;
-  return performance;
-}
-
-function createRandomSeat(id: number, performanceId: number): SeatEntity {
-  const seat = new SeatEntity();
-  const randomPosition = () => faker.number.int({ min: 1, max: 50 });
-
-  seat.id = id;
-  seat.createdAt = new Date();
-  seat.updatedAt = new Date();
-  seat.position = randomPosition();
-  seat.amount = 50_000;
-  seat.status = SeatStatus.AVAILABLE;
-  seat.performanceId = performanceId;
-  return seat;
-}
