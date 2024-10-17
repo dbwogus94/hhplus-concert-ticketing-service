@@ -2,9 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
 
-import { PerformanceEntity, SeatEntity, SeatStatus } from '../domain';
-import { PerformanceRepository } from './performance.repository';
 import { ResourceNotFoundException } from 'src/common';
+import { PerformanceEntity, SeatEntity, SeatStatus } from '../domain';
+import {
+  FindLockOptions,
+  PerformanceRepository,
+} from './performance.repository';
 
 @Injectable()
 export class PerformanceCoreRepository extends PerformanceRepository {
@@ -27,13 +30,14 @@ export class PerformanceCoreRepository extends PerformanceRepository {
     });
   }
 
-  override async getPerformanceBy(
+  override async getPerformanceByPk(
     performanceId: number,
   ): Promise<PerformanceEntity> {
     const performance = await this.findOne({
       where: { id: performanceId },
     });
-    if (!performance) throw new ResourceNotFoundException();
+    if (!performance)
+      throw new ResourceNotFoundException('공연이 존재하지 않습니다.');
     return performance;
   }
 
@@ -47,11 +51,14 @@ export class PerformanceCoreRepository extends PerformanceRepository {
     });
   }
 
-  override async getSeatBy(performanceId: number): Promise<SeatEntity> {
+  override async getSeatByPk(
+    seatId: number,
+    options: FindLockOptions = {},
+  ): Promise<SeatEntity> {
     const seat = await this.seatRepo.findOne({
-      where: { performanceId },
+      where: { id: seatId },
+      lock: { ...options.lock },
     });
-
     if (!seat) throw new ResourceNotFoundException();
     return seat;
   }

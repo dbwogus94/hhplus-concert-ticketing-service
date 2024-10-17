@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { ConflictStatusException } from 'src/common';
+import { DataSource, QueryFailedError } from 'typeorm';
 import { PerformanceRepository, ReservationRepository } from '../infra';
 import {
   GetPerformancesInfo,
   GetSeatsInfo,
   WriteReservationCommand,
 } from './dto';
-import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource, QueryFailedError } from 'typeorm';
-import { ConflictStatusException } from 'src/common';
 import { SeatStatus } from './model';
 
 @Injectable()
@@ -40,40 +40,45 @@ export class PerformanceService {
   }
 
   async getSeat(performanceId: number): Promise<GetSeatsInfo> {
-    const seat = await this.performanceRepo.getSeatBy(performanceId);
+    const seat = await this.performanceRepo.getSeatByPk(performanceId);
     return GetSeatsInfo.of(seat);
   }
 
   /**
-   * 좌석 상태 변경에는 낙관적 락을 사용한다.
+   * 예약 과정에서 좌석 상태변경은 비관적락 + NOWAIT 옵션을 사용한다.
+   * - `SELECT * FROM table WHERE id = 5 FOR UPDATE NOWAIT;`
+   * - 메서드명 reserveSeat으로 변경하자
    * @param command
    * @returns
    */
   async reservationSeat(command: WriteReservationCommand): Promise<number> {
-    const seat = await this.performanceRepo.getSeatBy(command.seatId);
-    if (seat.status !== SeatStatus.AVAILABLE)
-      throw new ConflictStatusException('좌석을 예약할 수 없는 상태 입니다.');
-
-    try {
-      return await this.dataSource.transaction(async (txManager) => {
+    return await this.dataSource
+      .transaction(async (txManager) => {
         const txPerformanceRepo =
           this.performanceRepo.createTransactionRepo(txManager);
         const txReservationRepo =
           this.reservationRepo.createTransactionRepo(txManager);
 
-        // NOTE: save에서 낙관적 락 동작한다.
-        await txPerformanceRepo.updateSeatStatus(seat.id, SeatStatus.RESERVED);
+        // Note: 비관적 락 + nowait 모드로 커넥션을 획득하지 못하면 즉시 에러처리한다.
+        const seat = await txPerformanceRepo.getSeatByPk(command.seatId, {
+          lock: { mode: 'pessimistic_write_or_fail' },
+        });
+        seat.reserve();
+
+        await txPerformanceRepo.updateSeatStatus(seat.id, seat.status);
         const reservationId = await txReservationRepo.insertOne({
           seatId: command.seatId,
           userId: command.userId,
         });
         return reservationId;
+      })
+      .catch((error) => {
+        if (
+          error instanceof QueryFailedError &&
+          error.message.includes('NOWAIT')
+        )
+          throw new ConflictStatusException('이미 선점된 좌석입니다.');
+        else throw error;
       });
-    } catch (error) {
-      if (error instanceof QueryFailedError) {
-        throw new ConflictStatusException('좌석을 예약할 수 없는 상태 입니다.');
-      }
-      throw error;
-    }
   }
 }
