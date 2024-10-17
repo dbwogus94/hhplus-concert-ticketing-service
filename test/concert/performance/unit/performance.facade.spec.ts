@@ -9,15 +9,18 @@ import {
   SeatStatus,
   WriteReservationCommand,
 } from 'src/domain/concert/performance';
+import { GetUserInfo, UserService } from 'src/domain/user';
 import { MockEntityGenerator } from 'test/fixture';
 
 describe('PerformanceFacade', () => {
   let performanceService: MockProxy<PerformanceService>;
+  let userService: MockProxy<UserService>;
   let facade: PerformanceFacade;
 
   beforeEach(() => {
     performanceService = mock<PerformanceService>();
-    facade = new PerformanceFacade(performanceService);
+    userService = mock<UserService>();
+    facade = new PerformanceFacade(performanceService, userService);
   });
 
   describe('getPerformances', () => {
@@ -202,10 +205,17 @@ describe('PerformanceFacade', () => {
           performanceId: 10,
           seatId: 15,
         });
+
+        const userEntity = MockEntityGenerator.generateUser({
+          id: command.userId,
+          pointId: 10,
+        });
+        const userInfo = GetUserInfo.of(userEntity);
         const newReservationId = 1;
         const success = newReservationId;
 
         // mock
+        userService.getUser.mockResolvedValue(userInfo);
         performanceService.reservationSeat.mockResolvedValue(newReservationId);
 
         // when
@@ -216,7 +226,7 @@ describe('PerformanceFacade', () => {
       });
 
       describe('만료한다.', () => {
-        it.skip('TODO: 좌석 임시예약에 성공하면 토큰이 만료된다.', async () => {
+        it.skip('좌석 임시예약에 성공하면 토큰이 만료된다.', async () => {
           // given
           // mock
           // when
