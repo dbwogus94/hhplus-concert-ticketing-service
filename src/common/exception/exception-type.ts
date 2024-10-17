@@ -17,6 +17,8 @@ export enum ApplicationExceptionCode {
   RESOURCE_NOT_FOUND = 'RESOURCE_NOT_FOUND',
   /** 사용불가능한 상태  */
   CONFLICT_STATUS = 'CONFLICT_STATUS',
+  /** 서버 오류 */
+  RUNTIME_ERROR = 'RUNTIME_ERROR',
 }
 
 export const ApplicationExceptionRecord: ApplicationExceptionRecord = {
@@ -33,5 +35,10 @@ export const ApplicationExceptionRecord: ApplicationExceptionRecord = {
   [ApplicationExceptionCode.CONFLICT_STATUS]: {
     message: '사용 불가능한 상태입니다.',
     state: 409,
+  },
+
+  [ApplicationExceptionCode.RUNTIME_ERROR]: {
+    message: 'Runtime 에러',
+    state: 500,
   },
 } as const;
