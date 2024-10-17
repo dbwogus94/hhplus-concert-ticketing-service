@@ -1,14 +1,18 @@
-import { InjectEntityManager } from '@nestjs/typeorm';
-import { EntityManager } from 'typeorm';
-
+import { FindOneOptions } from 'typeorm';
+import { BaseRepository } from 'src/common';
 import { PointEntity } from '../domain';
-import { PointRepository } from './point-core.repository';
+import { PointHistoryType } from '../domain/model/enum';
 
-export class PointCoreRepository extends PointRepository {
-  constructor(
-    @InjectEntityManager()
-    readonly manager: EntityManager,
-  ) {
-    super(PointEntity, manager);
-  }
+export type UpdatePointParam = { type: PointHistoryType; amount: number };
+export type FindLockOptions = Pick<FindOneOptions, 'lock'>;
+
+export abstract class PointRepository extends BaseRepository<PointEntity> {
+  abstract getPointByPk(
+    pointId: number,
+    options?: FindLockOptions,
+  ): Promise<PointEntity>;
+  abstract updatePointWithHistory(
+    pointId: number,
+    param: UpdatePointParam,
+  ): Promise<void>;
 }
