@@ -24,5 +24,6 @@ import {
       useClass: PointCoreRepository,
     },
   ],
+  exports: [UserService],
 })
 export class UserModule {}

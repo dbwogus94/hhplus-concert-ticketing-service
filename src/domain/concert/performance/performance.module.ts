@@ -9,8 +9,10 @@ import {
   ReservationRepository,
 } from './infra';
 import { PerformanceFacade } from './application';
+import { UserModule } from 'src/domain/user';
 
 @Module({
+  imports: [UserModule],
   controllers: [PerformanceController],
   providers: [
     PerformanceFacade,
@@ -24,5 +26,6 @@ import { PerformanceFacade } from './application';
       useClass: ReservationCoreRepository,
     },
   ],
+  exports: [PerformanceService],
 })
 export class PerformanceModule {}

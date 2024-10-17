@@ -1,4 +1,4 @@
-/** 대기열 상태 */
+/** 콘서트 좌석 상태 */
 export enum QueueStatus {
   /** 없음 */
   NONE = 'None',

@@ -10,4 +10,13 @@ export class PostQueueTokenRequest {
   @IsInt()
   @Min(1)
   concertId: number;
+
+  @RestApiIntProperty({
+    description: 'userId',
+    min: 1,
+    default: 1,
+  })
+  @IsInt()
+  @Min(1)
+  userId: number;
 }
