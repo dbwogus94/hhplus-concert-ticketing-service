@@ -5,7 +5,7 @@ import {
   ApiOperation,
 } from '@nestjs/swagger';
 
-import { GetQueueTokenResponse, PostQueueTokenResponse } from '../dto';
+import { PostQueueStateResponse, PostQueueTokenResponse } from '../dto';
 import { QueueController } from '../queue.controller';
 
 type API_DOC_TYPE = keyof QueueController;
@@ -26,7 +26,7 @@ const decorators: Record<API_DOC_TYPE, Function> = {
       ApiOperation({ summary: '큐 대기토큰 상태 조회' }),
       ApiOkResponse({
         description: '성공',
-        type: GetQueueTokenResponse,
+        type: PostQueueStateResponse,
       }),
     ),
 };

@@ -1,38 +1,40 @@
-import { Controller, Post, Get, Body, Headers, HttpCode } from '@nestjs/common';
-import {
-  PostQueueTokenResponse,
-  PostQueueTokenRequest,
-  GetQueueTokenResponse,
-} from './dto';
-import { QueueStatus } from './domain/model';
-import { DocumentHelper } from './document';
+import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+
+import { QueueFacade } from '../application';
+import { WriteQueueCommand } from '../domain';
+import { DocumentHelper } from './document';
+import {
+  PostQueueStateRequest,
+  PostQueueStateResponse,
+  PostQueueTokenRequest,
+  PostQueueTokenResponse,
+} from './dto';
 
 @ApiTags('대기큐 API')
 @Controller({ path: 'queue' })
 export class QueueController {
+  constructor(private readonly queueFacade: QueueFacade) {}
+
   @DocumentHelper('postQueueToken')
   @Post('/tokens')
   @HttpCode(201)
   async postQueueToken(
     @Body() body: PostQueueTokenRequest,
   ): Promise<PostQueueTokenResponse> {
-    return {
-      queueToken: 'mock-queue-token',
-      issuedAt: new Date('2023-06-01T10:00:00Z'),
-    };
+    const info = await this.queueFacade.createQueue(
+      WriteQueueCommand.from({ ...body }),
+    );
+    return PostQueueTokenResponse.of({ ...info });
   }
 
   @DocumentHelper('getQueueTokenStatus')
-  @Get('/tokens')
+  @Post('/status')
   @HttpCode(200)
   async getQueueTokenStatus(
-    @Headers('Waiting-Token') uuid: string,
-  ): Promise<GetQueueTokenResponse> {
-    return {
-      waitingNumber: 12,
-      state: QueueStatus.WAIT,
-      // accessToken: '
-    };
+    @Body() body: PostQueueStateRequest,
+  ): Promise<PostQueueStateResponse> {
+    const result = await this.queueFacade.getQueueStatus(body.waitToken);
+    return PostQueueStateResponse.of(result);
   }
 }

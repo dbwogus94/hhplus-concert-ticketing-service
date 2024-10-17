@@ -1,4 +1,6 @@
+import { plainToInstance } from 'class-transformer';
 import { RestApiDateProperty, RestApiStringProperty } from 'src/common';
+import { CreateQueueInfo } from 'src/domain/queue/domain';
 
 export class PostQueueTokenResponse {
   @RestApiStringProperty({
@@ -12,4 +14,13 @@ export class PostQueueTokenResponse {
     default: new Date(),
   })
   issuedAt: Date;
+
+  static of(info: CreateQueueInfo): PostQueueTokenResponse;
+  static of(info: CreateQueueInfo[]): PostQueueTokenResponse[];
+  static of(
+    info: CreateQueueInfo | CreateQueueInfo[],
+  ): PostQueueTokenResponse | PostQueueTokenResponse[] {
+    if (Array.isArray(info)) return info.map((i) => this.of(i));
+    return plainToInstance(PostQueueTokenResponse, { info });
+  }
 }
