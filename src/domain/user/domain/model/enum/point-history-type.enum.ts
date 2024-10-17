@@ -1,4 +1,4 @@
 export enum PointHistoryType {
-  CHARG = 'Charg',
+  CHARGE = 'Charge',
   USE = 'Use',
 }
