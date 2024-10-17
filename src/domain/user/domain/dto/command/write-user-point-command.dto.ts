@@ -1,9 +1,6 @@
-import { PointHistoryType } from '../../model/enum';
-
 type WriteUserPointCommandProp = {
   readonly userId: number;
   readonly amount: number;
-  readonly type: PointHistoryType;
 };
 
 export class WriteUserPointCommand {
@@ -15,10 +12,6 @@ export class WriteUserPointCommand {
 
   get amount() {
     return this.prop.amount;
-  }
-
-  get type() {
-    return this.prop.type;
   }
 
   static from(prop: WriteUserPointCommandProp) {

@@ -4,6 +4,7 @@ import {
   SeatEntity,
   SeatStatus,
 } from 'src/domain/concert/performance';
+import { PointEntity, UserEntity } from 'src/domain/user';
 
 export class MockEntityGenerator {
   static generatePerformance(id: number, concertId: number): PerformanceEntity {
@@ -29,5 +30,29 @@ export class MockEntityGenerator {
     seat.status = SeatStatus.AVAILABLE;
     seat.performanceId = performanceId;
     return seat;
+  }
+
+  static generateUser(param: { id: number; pointId: number }) {
+    const user = new UserEntity();
+
+    user.id = param.id;
+    user.createdAt = new Date();
+    user.updatedAt = new Date();
+    user.pointId = param.pointId;
+    user.name = faker.person.fullName();
+    user.email = faker.internet.email({
+      firstName: user.name,
+    });
+
+    return user;
+  }
+
+  static generatePoint(param: { id: number; amount?: number }) {
+    const point = new PointEntity();
+    point.id = param.id;
+    point.createdAt = new Date();
+    point.updatedAt = new Date();
+    point.amount = param.amount ?? 0;
+    return point;
   }
 }
