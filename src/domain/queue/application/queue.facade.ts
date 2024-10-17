@@ -33,4 +33,12 @@ export class QueueFacade {
 
     return QueueStatusResult.of(queue);
   }
+
+  async changeQueueActiveStatus(activeCount: number): Promise<void> {
+    await this.queueService.batchQueueActiveStatus(activeCount);
+  }
+
+  async changeQueueExpireStatus(): Promise<void> {
+    await this.queueService.changeExpireStatusQueues();
+  }
 }

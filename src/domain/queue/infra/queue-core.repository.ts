@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 
-import { InsertQueueParam, QueueRepository } from './queue.repository';
+import {
+  FindOptions,
+  InsertQueueParam,
+  QueueRepository,
+} from './queue.repository';
 import { EntityManager } from 'typeorm';
 import { QueueEntity, QueueStatus } from '../domain';
 import { ResourceNotFoundException } from 'src/common';
@@ -11,12 +15,8 @@ export class QueueCoreRepository extends QueueRepository {
     super(QueueEntity, manager);
   }
 
-  override async saveQueue(param: InsertQueueParam): Promise<QueueEntity> {
-    const quque = this.create({ ...param, status: QueueStatus.WAIT });
-    return await this.save({
-      quque,
-      uid: QueueEntity.generateUUIDv4(),
-    });
+  override async getQueuesBy(options: FindOptions): Promise<QueueEntity[]> {
+    return await this.find({ ...options });
   }
 
   override async getQueueByUid(queueUid: string): Promise<QueueEntity> {
@@ -36,5 +36,22 @@ export class QueueCoreRepository extends QueueRepository {
       .getCount();
 
     return count + 1;
+  }
+
+  override async saveQueue(param: InsertQueueParam): Promise<QueueEntity> {
+    const quque = this.create({ ...param, status: QueueStatus.WAIT });
+    return await this.save({
+      quque,
+      uid: QueueEntity.generateUUIDv4(),
+    });
+  }
+  override async updateQueues(queueEntities: QueueEntity[]): Promise<void> {
+    await this.manager.transaction(async (txManager) => {
+      await Promise.all(
+        queueEntities.map(async (queue) => {
+          await txManager.update(QueueEntity, queue.id, { ...queue });
+        }),
+      );
+    });
   }
 }
