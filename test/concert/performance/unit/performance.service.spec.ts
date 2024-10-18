@@ -8,6 +8,7 @@ import {
   PerformanceRepository,
   PerformanceService,
   ReservationRepository,
+  ReservationStatus,
   SeatStatus,
   WriteReservationCommand,
 } from 'src/domain/concert/performance';
@@ -108,7 +109,7 @@ describe('PerformanceService', () => {
     });
   });
 
-  describe('reservationSeat', () => {
+  describe('reserveSeat', () => {
     describe('실패한다.', () => {
       it('예약하려는 좌석이 존재하지 않으면 실패한다.', async () => {
         // given
@@ -132,7 +133,7 @@ describe('PerformanceService', () => {
         );
 
         // when & then
-        await expect(service.reservationSeat(command)) //
+        await expect(service.reserveSeat(command)) //
           .rejects.toBeInstanceOf(success);
       });
 
@@ -164,7 +165,7 @@ describe('PerformanceService', () => {
         );
 
         // when & then
-        await expect(service.reservationSeat(command)) //
+        await expect(service.reserveSeat(command)) //
           .rejects.toBeInstanceOf(success);
       });
 
@@ -193,7 +194,7 @@ describe('PerformanceService', () => {
         performanceRepo.getSeatByPk.mockResolvedValue(seatEntity);
 
         // when & then
-        await expect(service.reservationSeat(command)) //
+        await expect(service.reserveSeat(command)) //
           .rejects.toBeInstanceOf(success);
       });
     });
@@ -229,10 +230,118 @@ describe('PerformanceService', () => {
         reservationRepo.insertOne.mockResolvedValue(newReservationId);
 
         // when
-        const results = await service.reservationSeat(command);
+        const results = await service.reserveSeat(command);
 
         // then
         expect(results).toBe(success);
+      });
+    });
+  });
+
+  describe('getSeatReservation', () => {
+    describe('성공한다.', () => {
+      it('유효한 예약 신청 상태의 예약을 반환한다.', async () => {
+        // given
+        const reservationId = 1;
+        const userId = 10;
+        const mockReservation = MockEntityGenerator.generateReservation({
+          id: reservationId,
+          userId,
+        });
+
+        // mock
+        reservationRepo.getReservationBy.mockResolvedValue(mockReservation);
+
+        // when
+        const result = await service.getSeatReservation(reservationId, userId);
+
+        // then
+        expect(result).toEqual(mockReservation);
+        expect(reservationRepo.getReservationBy).toHaveBeenCalledWith({
+          id: reservationId,
+          userId,
+        });
+      });
+    });
+
+    describe('실패한다.', () => {
+      it('예약 신청 상태가 아니면 실패한다.', async () => {
+        // given
+        const reservationId = 1;
+        const userId = 10;
+        const mockReservation = MockEntityGenerator.generateReservation({
+          id: reservationId,
+          userId,
+        });
+        mockReservation.status = ReservationStatus.CANCEL;
+
+        // mock
+        reservationRepo.getReservationBy.mockResolvedValue(mockReservation);
+
+        // when & then
+        await expect(
+          service.getSeatReservation(reservationId, userId),
+        ).rejects.toThrow(ConflictStatusException);
+      });
+    });
+  });
+
+  describe('bookingSeat', () => {
+    describe('성공한다.', () => {
+      it('좌석 예약을 완료 상태로 변경한다.', async () => {
+        // given
+        const seatId = 1;
+        const mockSeat = MockEntityGenerator.generateSeat(seatId, 1);
+        mockSeat.status = SeatStatus.RESERVED;
+
+        const mockReservation = MockEntityGenerator.generateReservation({
+          id: 1,
+          seatId: mockSeat.id,
+        });
+        mockReservation.status = ReservationStatus.REQUEST;
+        const success = ReservationStatus.CONFIRM;
+
+        // mock transaction
+        mockDataSource.transaction.mockImplementation(async (cb) =>
+          cb(mockDataSource),
+        );
+        performanceRepo.createTransactionRepo.mockReturnValue(performanceRepo);
+        reservationRepo.createTransactionRepo.mockReturnValue(reservationRepo);
+
+        // mock
+        performanceRepo.getSeatByPk.mockResolvedValue(mockSeat);
+        reservationRepo.getReservationBy.mockResolvedValue(mockReservation);
+        performanceRepo.updateSeatStatus.mockResolvedValue();
+        reservationRepo.updateReservationStatus.mockResolvedValue();
+
+        // when
+        await service.bookingSeat(seatId);
+
+        // then
+        expect(performanceRepo.updateSeatStatus).toHaveBeenCalledWith(
+          seatId,
+          SeatStatus.BOOKED,
+        );
+        expect(reservationRepo.updateReservationStatus).toHaveBeenCalled();
+        expect(mockReservation.status).toBe(success);
+      });
+    });
+
+    describe('실패한다.', () => {
+      it('트랜잭션 중 에러가 발생하면 롤백된다.', async () => {
+        // given
+        const seatId = 1;
+        // const mockSeat = MockEntityGenerator.generateSeat(seatId, 1);
+
+        // mock transaction
+        mockDataSource.transaction.mockRejectedValue(
+          new Error('Transaction failed'),
+        );
+
+        // when & then
+        await expect(service.bookingSeat(seatId)).rejects.toThrow(
+          'Transaction failed',
+        );
       });
     });
   });

@@ -4,9 +4,11 @@ import { EntityManager } from 'typeorm';
 
 import { ReservationEntity, ReservationStatus } from '../domain';
 import {
+  FindByOptions,
   InsertReservationParam,
   ReservationRepository,
 } from './reservation.repository';
+import { ResourceNotFoundException } from 'src/common';
 
 @Injectable()
 export class ReservationCoreRepository extends ReservationRepository {
@@ -17,11 +19,29 @@ export class ReservationCoreRepository extends ReservationRepository {
     super(ReservationEntity, manager);
   }
 
+  override async getReservationBy(
+    options: FindByOptions = {},
+  ): Promise<ReservationEntity> {
+    const reservation = await this.findOneBy({
+      ...options,
+    });
+    if (!reservation)
+      throw new ResourceNotFoundException('예약이 존재하지 않습니다.');
+    return reservation;
+  }
+
   override async insertOne(param: InsertReservationParam): Promise<number> {
     const { raw } = await this.insert({
       ...param,
       status: ReservationStatus.REQUEST,
     });
     return raw.insertId;
+  }
+
+  override async updateReservationStatus(
+    reservationId: number,
+    status: ReservationStatus,
+  ): Promise<void> {
+    await this.update(reservationId, { status });
   }
 }

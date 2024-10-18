@@ -100,7 +100,7 @@ describe('PerformanceFacade', () => {
     });
   });
 
-  describe('reservationSeat', () => {
+  describe('reserveSeat', () => {
     describe('실패한다.', () => {
       it('TODO: 유저가 존재하지 않으면 실패힌다.', async () => {
         // given
@@ -112,14 +112,14 @@ describe('PerformanceFacade', () => {
         const success = ResourceNotFoundException;
 
         // mock
-        performanceService.reservationSeat.mockRejectedValue(
+        performanceService.reserveSeat.mockRejectedValue(
           new ResourceNotFoundException(),
         );
 
         // when & then
         try {
           // when
-          await facade.reservationSeat(command);
+          await facade.reserveSeat(command);
         } catch (error) {
           // then
           expect(error).toBeInstanceOf(success);
@@ -136,14 +136,14 @@ describe('PerformanceFacade', () => {
         const success = ResourceNotFoundException;
 
         // mock
-        performanceService.reservationSeat.mockRejectedValue(
+        performanceService.reserveSeat.mockRejectedValue(
           new ResourceNotFoundException(),
         );
 
         // when & then
         try {
           // when
-          await facade.reservationSeat(command);
+          await facade.reserveSeat(command);
         } catch (error) {
           // then
           expect(error).toBeInstanceOf(success);
@@ -160,13 +160,13 @@ describe('PerformanceFacade', () => {
         const success = ConflictStatusException;
 
         // mock
-        performanceService.reservationSeat.mockRejectedValue(
+        performanceService.reserveSeat.mockRejectedValue(
           new ConflictStatusException(),
         );
 
         try {
           // when
-          await facade.reservationSeat(command);
+          await facade.reserveSeat(command);
         } catch (error) {
           // then
           expect(error).toBeInstanceOf(success);
@@ -183,13 +183,13 @@ describe('PerformanceFacade', () => {
         const success = ConflictStatusException;
 
         // mock
-        performanceService.reservationSeat.mockRejectedValue(
+        performanceService.reserveSeat.mockRejectedValue(
           new ConflictStatusException(),
         );
 
         try {
           // when
-          await facade.reservationSeat(command);
+          await facade.reserveSeat(command);
         } catch (error) {
           // then
           expect(error).toBeInstanceOf(success);
@@ -216,10 +216,10 @@ describe('PerformanceFacade', () => {
 
         // mock
         userService.getUser.mockResolvedValue(userInfo);
-        performanceService.reservationSeat.mockResolvedValue(newReservationId);
+        performanceService.reserveSeat.mockResolvedValue(newReservationId);
 
         // when
-        const results = await facade.reservationSeat(command);
+        const results = await facade.reserveSeat(command);
 
         // then
         expect(results).toBe(success);

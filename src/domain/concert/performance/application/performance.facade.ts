@@ -25,12 +25,11 @@ export class PerformanceFacade {
     return seats;
   }
 
-  async reservationSeat(command: WriteReservationCommand): Promise<number> {
+  async reserveSeat(command: WriteReservationCommand): Promise<number> {
     await this.userService.getUserPoint(command.userId);
 
     // 객체 지향적으로 UserInfo를 넣게 하자
-    const reservationId =
-      await this.performanceService.reservationSeat(command);
+    const reservationId = await this.performanceService.reserveSeat(command);
     // TODO: wait-queue 토큰 만료 로직
     return reservationId;
   }

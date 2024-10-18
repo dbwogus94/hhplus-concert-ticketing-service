@@ -1,6 +1,8 @@
 import { faker } from '@faker-js/faker';
 import {
   PerformanceEntity,
+  ReservationEntity,
+  ReservationStatus,
   SeatEntity,
   SeatStatus,
 } from 'src/domain/concert/performance';
@@ -74,5 +76,23 @@ export class MockEntityGenerator {
     queue.activeAt = null;
     queue.activeExpireAt = null;
     return queue;
+  }
+
+  static generateReservation(param: {
+    id: number;
+    seatId?: number;
+    userId?: number;
+  }) {
+    const randomPrice = () => 10000 * faker.number.int({ min: 1, max: 10 });
+
+    const reserve = new ReservationEntity();
+    reserve.id = param.id;
+    reserve.createdAt = new Date();
+    reserve.updatedAt = new Date();
+    reserve.seatId = param.seatId ?? 1;
+    reserve.userId = param.userId ?? 1;
+    reserve.price = randomPrice();
+    reserve.status = ReservationStatus.REQUEST;
+    return reserve;
   }
 }

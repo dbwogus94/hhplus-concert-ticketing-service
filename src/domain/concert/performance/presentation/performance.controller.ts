@@ -64,7 +64,7 @@ export class PerformanceController {
     @Param('seatId', ParseIntPipe) seatId: number,
     @GetUserInfoDecorator('userId') userId: number,
   ): Promise<PostSeatReservationResponse> {
-    const reservationId = await this.performanceFacade.reservationSeat(
+    const reservationId = await this.performanceFacade.reserveSeat(
       WriteReservationCommand.from({
         userId,
         seatId,
