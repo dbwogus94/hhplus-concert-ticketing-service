@@ -96,9 +96,9 @@ describe('PerformanceFacade 통합테스트', () => {
   describe('reserveSeat', () => {
     it('선택한 좌석을 예약한다.', async () => {
       // Given
-      const userId = 1;
+      const userId = 11;
       const performanceId = 1;
-      const seatId = 1;
+      const seatId = 11;
 
       const command = new WriteReservationCommand({
         userId,
@@ -114,11 +114,29 @@ describe('PerformanceFacade 통합테스트', () => {
       expect(typeof reservationId).toBe('number');
     });
 
-    it('[실패한다.] 좌석이 예약된 경우 충돌 예외가 발생한다.', async () => {
+    it('좌석이 예약된 경우 충돌 예외가 발생한다.', async () => {
       // Given
       const userId = 1;
       const performanceId = 1;
       const seatId = 1;
+
+      const command = new WriteReservationCommand({
+        userId,
+        performanceId,
+        seatId,
+      });
+
+      // When & Then
+      await expect(performanceFacade.reserveSeat(command)).rejects.toThrow(
+        ConflictStatusException,
+      );
+    });
+
+    it('좌석을 중복 예약하는 경우 충돌 예외가 발생한다.', async () => {
+      // Given
+      const userId = 11;
+      const performanceId = 1;
+      const seatId = 11;
 
       const command = new WriteReservationCommand({
         userId,

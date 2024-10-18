@@ -100,7 +100,7 @@ describe('PaymentFacade', () => {
 
     it('사용자의 포인트가 부족할 경우 에러가 발생해야 한다', async () => {
       // Given
-      const userId = 1;
+      const userId = 11;
       const reservationId = 1;
       const criteria = WritePaymentCriteria.from({ userId, reservationId });
 
