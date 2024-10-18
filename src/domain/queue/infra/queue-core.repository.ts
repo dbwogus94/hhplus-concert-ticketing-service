@@ -29,10 +29,10 @@ export class QueueCoreRepository extends QueueRepository {
     const { uid, createdAt, concertId } = queueEntity;
     const count = await this.createQueryBuilder('q')
       .select('q.id')
-      .where('q.uid = :queueUid', { uid })
-      .andWhere('q.concertId = :concertId', { concertId })
-      .andWhere('q.status = :status', { status: QueueStatus.WAIT })
-      .andWhere('q.createdAt > :createdAt', { createdAt })
+      .where('q.uid =:uid', { uid })
+      .andWhere('q.concertId =:concertId', { concertId })
+      .andWhere('q.status =:status', { status: QueueStatus.WAIT })
+      .andWhere('q.createdAt >:createdAt', { createdAt })
       .getCount();
 
     return count + 1;
@@ -41,7 +41,7 @@ export class QueueCoreRepository extends QueueRepository {
   override async saveQueue(param: InsertQueueParam): Promise<QueueEntity> {
     const quque = this.create({ ...param, status: QueueStatus.WAIT });
     return await this.save({
-      quque,
+      ...quque,
       uid: QueueEntity.generateUUIDv4(),
     });
   }

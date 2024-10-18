@@ -3,7 +3,11 @@ import { BaseRepository } from 'src/common';
 import { PointEntity } from '../domain';
 import { PointHistoryType } from '../domain/model/enum';
 
-export type UpdatePointParam = { type: PointHistoryType; amount: number };
+export type UpdatePointParam = {
+  type: PointHistoryType;
+  amount: number;
+  userId: number;
+};
 export type FindLockOptions = Pick<FindOneOptions, 'lock'>;
 
 export abstract class PointRepository extends BaseRepository<PointEntity> {

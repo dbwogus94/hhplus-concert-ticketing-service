@@ -23,12 +23,12 @@ export class QueueFacade {
   async getQueueStatus(queueUid: string) {
     const queue = await this.queueService.getQueue(queueUid);
 
-    if (queue.status === QueueStatus.WAIT) {
-      const jwt = this.authService.issueToken({
+    if (queue.status !== QueueStatus.WAIT) {
+      const accessToken = this.authService.issueToken({
         queueUid: queue.uid,
         userId: queue.userId,
       });
-      return QueueStatusResult.of({ ...queue, jwt });
+      return QueueStatusResult.of({ ...queue, accessToken });
     }
 
     return QueueStatusResult.of(queue);

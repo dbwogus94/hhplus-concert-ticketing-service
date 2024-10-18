@@ -1,4 +1,5 @@
-import { IsInt, Min } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsInt } from 'class-validator';
 import { RestApiIntProperty } from 'src/common';
 
 export class GetPerformancesQuery {
@@ -7,7 +8,7 @@ export class GetPerformancesQuery {
     min: 1,
     default: 1,
   })
+  @Type(() => Number)
   @IsInt()
-  @Min(1)
   concertId: number;
 }

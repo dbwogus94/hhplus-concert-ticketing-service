@@ -1,7 +1,6 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
-import { GetUserInfoDecorator } from 'src/common';
 import { PaymentFacade, WritePaymentCriteria } from '../application';
 import { DocumentHelper } from './document';
 import { PostPaymentRequest, PostPaymentResponse } from './dto';
@@ -16,13 +15,9 @@ export class PaymentController {
   @HttpCode(201)
   async postPayment(
     @Body() body: PostPaymentRequest,
-    @GetUserInfoDecorator('userId') userId: number,
   ): Promise<PostPaymentResponse> {
     const result = await this.paymentFacade.payment(
-      WritePaymentCriteria.from({
-        reservationId: body.reservationId,
-        userId,
-      }),
+      WritePaymentCriteria.from({ ...body }),
     );
     return PostPaymentResponse.of(result);
   }

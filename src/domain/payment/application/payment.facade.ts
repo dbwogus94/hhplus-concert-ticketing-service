@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { InjectDataSource } from '@nestjs/typeorm';
 import { PerformanceService } from 'src/domain/concert/performance';
 import { UserService, WriteUserPointCommand } from 'src/domain/user';
 import { GetPaymentInfo, WritePaymentCommand } from '../doamin';
@@ -9,7 +8,6 @@ import { WritePaymentCriteria } from './dto';
 @Injectable()
 export class PaymentFacade {
   constructor(
-    @InjectDataSource()
     private readonly paymentService: PaymentService,
     private readonly performanceService: PerformanceService,
     private readonly userService: UserService,

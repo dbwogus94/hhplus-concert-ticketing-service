@@ -6,7 +6,7 @@ import { QueueStatus } from '../../domain';
 
 @Entity('queue')
 export class QueueEntity extends BaseEntity {
-  @Column('varchar', { length: 26 })
+  @Column()
   uid: string;
 
   @Column('int')

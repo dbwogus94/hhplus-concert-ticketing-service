@@ -10,4 +10,13 @@ export class PostPaymentRequest {
   @IsInt()
   @Min(1)
   reservationId: number;
+
+  @RestApiIntProperty({
+    description: '예약 ID',
+    min: 1,
+    default: 1,
+  })
+  @IsInt()
+  @Min(1)
+  userId: number;
 }
