@@ -25,12 +25,6 @@ export class PerformanceService {
     return GetPerformancesInfo.of(performances);
   }
 
-  // async getPerformance(performanceId: number): Promise<GetPerformancesInfo> {
-  //   const performance =
-  //     await this.performanceRepo.getPerformanceBy(performanceId);
-  //   return GetPerformancesInfo.of(performance);
-  // }
-
   async getAvailableSeats(performanceId: number): Promise<GetSeatsInfo[]> {
     const seats = await this.performanceRepo.getSeatsBy(
       performanceId,
@@ -51,7 +45,7 @@ export class PerformanceService {
    * @param command
    * @returns
    */
-  async reservationSeat(command: WriteReservationCommand): Promise<number> {
+  async reserveSeat(command: WriteReservationCommand): Promise<number> {
     return await this.dataSource
       .transaction(async (txManager) => {
         const txPerformanceRepo =
@@ -69,6 +63,7 @@ export class PerformanceService {
         const reservationId = await txReservationRepo.insertOne({
           seatId: command.seatId,
           userId: command.userId,
+          price: seat.amount,
         });
         return reservationId;
       })
@@ -80,5 +75,35 @@ export class PerformanceService {
           throw new ConflictStatusException('이미 선점된 좌석입니다.');
         else throw error;
       });
+  }
+
+  async getSeatReservation(reservationId: number, userId: number) {
+    const reservation = await this.reservationRepo.getReservationBy({
+      id: reservationId,
+      userId,
+    });
+    if (!reservation.isRequest)
+      throw new ConflictStatusException('"예약신청" 상태가 아닙니다.');
+    return reservation;
+  }
+
+  async bookingSeat(seatId: number): Promise<void> {
+    await this.dataSource.transaction(async (txManager) => {
+      const txPerformanceRepo =
+        this.performanceRepo.createTransactionRepo(txManager);
+      const txReservationRepo =
+        this.reservationRepo.createTransactionRepo(txManager);
+
+      const seat = await txPerformanceRepo.getSeatByPk(seatId);
+      seat.booking();
+      await txPerformanceRepo.updateSeatStatus(seat.id, seat.status);
+
+      const reservation = await txReservationRepo.getReservationBy({ seatId });
+      reservation.confirm();
+      await txReservationRepo.updateReservationStatus(
+        reservation.id,
+        reservation.status,
+      );
+    });
   }
 }

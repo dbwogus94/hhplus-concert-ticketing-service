@@ -1,11 +1,21 @@
 import { BaseRepository } from 'src/common';
-import { ReservationEntity } from '../domain';
+import { ReservationEntity, ReservationStatus } from '../domain';
 
 export type InsertReservationParam = Pick<
   ReservationEntity,
-  'userId' | 'seatId'
+  'userId' | 'seatId' | 'price'
+>;
+
+export type FindByOptions = Pick<
+  Partial<ReservationEntity>,
+  'id' | 'userId' | 'seatId'
 >;
 
 export abstract class ReservationRepository extends BaseRepository<ReservationEntity> {
+  abstract getReservationBy(options: FindByOptions): Promise<ReservationEntity>;
   abstract insertOne(param: InsertReservationParam): Promise<number>;
+  abstract updateReservationStatus(
+    reservationId: number,
+    status: ReservationStatus,
+  ): Promise<void>;
 }
