@@ -48,6 +48,7 @@ export class UserService {
           // TODO: type를 넘기는 건 실수하기 너무 좋음, 개선필요
           type: PointHistoryType.CHARGE,
           amount: point.amount,
+          userId,
         });
         return GetUserPointInfo.of(point);
       })
@@ -81,6 +82,7 @@ export class UserService {
         await txPointRepo.updatePointWithHistory(user.pointId, {
           type: PointHistoryType.USE,
           amount: point.amount,
+          userId,
         });
         return GetUserPointInfo.of(point);
       })

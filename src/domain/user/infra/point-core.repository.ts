@@ -40,8 +40,7 @@ export class PointCoreRepository extends PointRepository {
     pointId: number,
     param: UpdatePointParam,
   ): Promise<void> {
-    const { amount, type } = param;
     await this.update(pointId, { amount: param.amount });
-    await this.pointHistoryRepo.insert({ amount, type });
+    await this.pointHistoryRepo.insert({ ...param });
   }
 }
