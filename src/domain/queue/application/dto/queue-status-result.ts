@@ -1,14 +1,14 @@
 import { GetQueueInfo, QueueStatus } from '../../domain';
 
 type QueueStatusResultParam = GetQueueInfo & {
-  jwt?: string;
+  accessToken?: string;
 };
 
 export class QueueStatusResult {
   constructor(
     private readonly status: QueueStatus,
     private readonly waitingNumber: number,
-    private readonly jwt?: string,
+    private readonly accessToken?: string,
   ) {}
 
   static of(param: QueueStatusResultParam): QueueStatusResult;
@@ -18,6 +18,10 @@ export class QueueStatusResult {
   ): QueueStatusResult | QueueStatusResult[] {
     if (Array.isArray(param)) return param.map((i) => this.of(i));
 
-    return new QueueStatusResult(param.status, param.waitingNumber, param.jwt);
+    return new QueueStatusResult(
+      param.status,
+      param.waitingNumber,
+      param.accessToken,
+    );
   }
 }
