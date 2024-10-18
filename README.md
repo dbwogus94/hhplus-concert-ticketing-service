@@ -6,6 +6,7 @@
 - [시퀀스 다이어그램](docs/2-시퀀스다이어그램.md)
 - [API 정의서](docs/3-API-정의서.md)
 - [ERD 설계서](docs/4-ERD-정의서.md)
+- [Swagger 이미지](docs/swagger.png)
 
 
 ## 서버 환경
