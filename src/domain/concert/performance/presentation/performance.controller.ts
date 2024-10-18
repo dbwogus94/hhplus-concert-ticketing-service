@@ -6,6 +6,7 @@ import {
   ParseIntPipe,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
@@ -21,6 +22,7 @@ import {
 } from './dto';
 import { PerformanceFacade } from '../application';
 import { WriteReservationCommand } from '../domain';
+import { JwtGuard } from 'src/domain/auth';
 
 @ApiTags('공연 API')
 @Controller('/performances')
@@ -29,6 +31,7 @@ export class PerformanceController {
 
   //
   @DocumentHelper('getPerformances')
+  @UseGuards(JwtGuard)
   @Get('/performances')
   @HttpCode(200)
   async getPerformances(
@@ -44,6 +47,7 @@ export class PerformanceController {
   }
 
   @DocumentHelper('getSeats')
+  @UseGuards(JwtGuard)
   @Get('/:performanceId/seats')
   @HttpCode(200)
   async getSeats(
@@ -57,6 +61,7 @@ export class PerformanceController {
   }
 
   @DocumentHelper('postSeatReservation')
+  @UseGuards(JwtGuard)
   @Post('/:performanceId/seats/:seatId/reservations')
   @HttpCode(201)
   async postSeatReservation(
