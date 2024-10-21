@@ -2,6 +2,7 @@ import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
 
 import { QueueFacade } from '../application';
+import { CustomLoggerService } from 'src/global';
 
 @Injectable()
 export class QueueSchedule implements OnApplicationBootstrap {
@@ -15,14 +16,17 @@ export class QueueSchedule implements OnApplicationBootstrap {
   constructor(
     private readonly schedulerRegistry: SchedulerRegistry,
     private readonly queueFacade: QueueFacade,
-  ) {}
+    private readonly logger: CustomLoggerService,
+  ) {
+    this.logger.setTarget(this.constructor.name);
+  }
 
   async onApplicationBootstrap() {
-    console.log('( onApplicationBootstrap ) ');
+    this.logger.log('( onApplicationBootstrap ) ');
 
     try {
     } catch (error) {
-      console.error(error as Error);
+      this.logger.error(error as Error);
     }
   }
 
@@ -30,7 +34,7 @@ export class QueueSchedule implements OnApplicationBootstrap {
     name: QueueSchedule.JOB.CHANGE_QUEUE_ACTIVE_STATUS,
   })
   async changeQueueActiveStatus() {
-    console.warn(`[${QueueSchedule.JOB.CHANGE_QUEUE_ACTIVE_STATUS}] start`);
+    this.logger.warn(`[${QueueSchedule.JOB.CHANGE_QUEUE_ACTIVE_STATUS}] start`);
 
     const job = this.schedulerRegistry.getCronJob(
       QueueSchedule.JOB.CHANGE_QUEUE_ACTIVE_STATUS,
@@ -41,9 +45,9 @@ export class QueueSchedule implements OnApplicationBootstrap {
       const activeCount = 100; // TODO: 환경변수나 API로 조정 가능하게 변경하자
       await this.queueFacade.changeQueueActiveStatus(activeCount);
     } catch (error) {
-      console.error(error);
+      this.logger.error(error as Error);
     }
-    console.warn(`[${QueueSchedule.JOB.CHANGE_QUEUE_ACTIVE_STATUS}] end`);
+    this.logger.warn(`[${QueueSchedule.JOB.CHANGE_QUEUE_ACTIVE_STATUS}] end`);
 
     job.start();
   }
@@ -53,7 +57,7 @@ export class QueueSchedule implements OnApplicationBootstrap {
   // })
   // TODO: 서비스 제한시간이 자닌 토큰 만료 처리
   async changeQueueExpireStatus() {
-    console.warn(`[${QueueSchedule.JOB.CHANGE_QUEUE_EXPIRE_STATUS}] start`);
+    this.logger.warn(`[${QueueSchedule.JOB.CHANGE_QUEUE_EXPIRE_STATUS}] start`);
 
     const job = this.schedulerRegistry.getCronJob(
       QueueSchedule.JOB.CHANGE_QUEUE_EXPIRE_STATUS,
@@ -63,9 +67,9 @@ export class QueueSchedule implements OnApplicationBootstrap {
     try {
       await this.queueFacade.changeQueueExpireStatus();
     } catch (error) {
-      console.error(error);
+      this.logger.error(error as Error);
     }
-    console.warn(`[${QueueSchedule.JOB.CHANGE_QUEUE_EXPIRE_STATUS}] end`);
+    this.logger.warn(`[${QueueSchedule.JOB.CHANGE_QUEUE_EXPIRE_STATUS}] end`);
 
     job.start();
   }
