@@ -24,6 +24,7 @@ export class QueueService {
     const waitingNumber = await this.queueRepo.getWaitingNumber(queue);
     return GetQueueInfo.of({ ...queue, waitingNumber });
   }
+
   // TODO: 콘서트 별로 어떻게 돌릴지 고민이 필요하다.
   async batchQueueActiveStatus(activeCount: number): Promise<void> {
     const queues = await this.queueRepo.getQueuesBy({
