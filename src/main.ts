@@ -1,4 +1,4 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
@@ -8,6 +8,7 @@ import {
   WinstonOptionsStrategyFactory,
 } from './common';
 import { AppModule } from './app.module';
+import { httpLogger } from './common/middleware/http-logger.middleware';
 
 const DEFALUT_APP_NAME = 'hhplus-concert';
 
@@ -28,7 +29,9 @@ async function bootstrap() {
   });
 
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
+  app.use(httpLogger(app.get(Logger)));
   setupSwagger(app);
+
   await app.listen(3000);
 }
 bootstrap();
