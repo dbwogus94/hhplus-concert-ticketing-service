@@ -1,5 +1,12 @@
-import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import {
+  TypeOrmModuleAsyncOptions,
+  TypeOrmModuleOptions,
+} from '@nestjs/typeorm';
+import { DataSourceOptions } from 'typeorm';
+
+import { CustomLoggerModule, CustomLoggerService } from 'src/global';
 import { MysqlConnectionOptions } from 'typeorm/driver/mysql/MysqlConnectionOptions';
+import { CustomTypeormLogger } from './custom-typeorm-logger';
 
 export const mysqlDataSourceOptions: MysqlConnectionOptions = {
   type: 'mysql',
@@ -16,6 +23,27 @@ export const mysqlDataSourceOptions: MysqlConnectionOptions = {
 } as const;
 
 export const typeOrmDataSourceOptions: TypeOrmModuleOptions = {
-  // ...sqliteDataSourceOptions,
   ...mysqlDataSourceOptions,
 };
+
+function createDataSourceOptions(
+  logger: CustomLoggerService,
+): DataSourceOptions {
+  const loggingLevel = CustomTypeormLogger.logLevelParser(
+    process.env.DATABASE_LOG,
+  );
+
+  return {
+    ...mysqlDataSourceOptions,
+    logger: new CustomTypeormLogger(logger, loggingLevel),
+  };
+}
+
+export function getTypeOrmModuleAsyncOptions(): TypeOrmModuleAsyncOptions {
+  return {
+    imports: [CustomLoggerModule],
+    inject: [CustomLoggerService],
+    useFactory: (logger: CustomLoggerService) =>
+      createDataSourceOptions(logger),
+  };
+}
