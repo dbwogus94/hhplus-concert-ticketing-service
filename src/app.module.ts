@@ -12,6 +12,7 @@ import {
 } from './common';
 import { DomainModule } from './domain';
 import { AsyncLocalStorageModule, CustomLoggerModule } from './global';
+import { AopModule } from '@toss/nestjs-aop';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { AsyncLocalStorageModule, CustomLoggerModule } from './global';
       ...getTypeOrmModuleAsyncOptions(),
     }),
     ScheduleModule.forRoot(),
+    AopModule,
     CustomLoggerModule.forRoot(),
     AsyncLocalStorageModule.forRoot(),
     DomainModule,
