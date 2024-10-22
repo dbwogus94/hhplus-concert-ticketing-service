@@ -1,19 +1,22 @@
 import { Injectable } from '@nestjs/common';
-import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource, QueryFailedError } from 'typeorm';
+import { InjectEntityManager } from '@nestjs/typeorm';
+import { EntityManager, QueryFailedError } from 'typeorm';
 
-import { GetUserInfo, GetUserPointInfo, WriteUserPointCommand } from './dto';
-import { PointRepository, UserRepository } from '../infra';
-import { PointHistoryType } from './model/enum';
+import { AsyncLocalStorage } from 'async_hooks';
 import { ConflictStatusException } from 'src/common';
+import { PointRepository, UserRepository } from '../infra';
+import { GetUserInfo, GetUserPointInfo, WriteUserPointCommand } from './dto';
+import { PointHistoryType } from './model/enum';
 
 @Injectable()
 export class UserService {
   constructor(
-    @InjectDataSource()
-    private readonly dataSource: DataSource,
+    @InjectEntityManager() private readonly manager: EntityManager,
     private readonly userRepo: UserRepository,
     private readonly pointRepo: PointRepository,
+    private readonly asyncStorge: AsyncLocalStorage<{
+      txManager: EntityManager;
+    }>,
   ) {}
 
   async getUser(userId: number): Promise<GetUserInfo> {
@@ -30,10 +33,11 @@ export class UserService {
   async chargeUserPoint(
     command: WriteUserPointCommand,
   ): Promise<GetUserPointInfo> {
-    const { amount: chargeAmount, userId } = command;
-
-    return await this.dataSource
+    // asyncStorage에 트랜잭션 커넥션 가져오기
+    const manager = this.asyncStorge.getStore()?.txManager ?? this.manager;
+    return await manager
       .transaction(async (txManager) => {
+        const { amount: chargeAmount, userId } = command;
         const txUser = this.userRepo.createTransactionRepo(txManager);
         const txPointRepo = this.pointRepo.createTransactionRepo(txManager);
 
@@ -67,7 +71,8 @@ export class UserService {
   ): Promise<GetUserPointInfo> {
     const { amount: chargeAmount, userId } = command;
 
-    return await this.dataSource
+    const manager = this.asyncStorge.getStore()?.txManager ?? this.manager;
+    return await manager
       .transaction(async (txManager) => {
         const txUser = this.userRepo.createTransactionRepo(txManager);
         const txPointRepo = this.pointRepo.createTransactionRepo(txManager);

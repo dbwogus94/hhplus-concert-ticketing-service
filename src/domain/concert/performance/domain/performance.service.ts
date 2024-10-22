@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { InjectDataSource } from '@nestjs/typeorm';
+import { InjectEntityManager } from '@nestjs/typeorm';
+import { AsyncLocalStorage } from 'async_hooks';
 import { ConflictStatusException } from 'src/common';
-import { DataSource, QueryFailedError } from 'typeorm';
+import { EntityManager, QueryFailedError } from 'typeorm';
 import { PerformanceRepository, ReservationRepository } from '../infra';
 import {
   GetPerformancesInfo,
@@ -13,10 +14,12 @@ import { SeatStatus } from './model';
 @Injectable()
 export class PerformanceService {
   constructor(
-    @InjectDataSource()
-    private readonly dataSource: DataSource,
+    @InjectEntityManager() private readonly manager: EntityManager,
     private readonly performanceRepo: PerformanceRepository,
     private readonly reservationRepo: ReservationRepository,
+    private readonly asyncStorge: AsyncLocalStorage<{
+      txManager: EntityManager;
+    }>,
   ) {}
 
   async getPerformances(concertId: number): Promise<GetPerformancesInfo[]> {
@@ -46,7 +49,8 @@ export class PerformanceService {
    * @returns
    */
   async reserveSeat(command: WriteReservationCommand): Promise<number> {
-    return await this.dataSource
+    const manager = this.asyncStorge.getStore()?.txManager ?? this.manager;
+    return await manager
       .transaction(async (txManager) => {
         const txPerformanceRepo =
           this.performanceRepo.createTransactionRepo(txManager);
@@ -78,7 +82,12 @@ export class PerformanceService {
   }
 
   async getSeatReservation(reservationId: number, userId: number) {
-    const reservation = await this.reservationRepo.getReservationBy({
+    const txManager = this.asyncStorge.getStore()?.txManager;
+    const reservationRepo = txManager
+      ? this.reservationRepo.createTransactionRepo(txManager)
+      : this.reservationRepo;
+
+    const reservation = await reservationRepo.getReservationBy({
       id: reservationId,
       userId,
     });
@@ -88,7 +97,8 @@ export class PerformanceService {
   }
 
   async bookingSeat(seatId: number): Promise<void> {
-    await this.dataSource.transaction(async (txManager) => {
+    const manager = this.asyncStorge.getStore()?.txManager ?? this.manager;
+    await manager.transaction(async (txManager) => {
       const txPerformanceRepo =
         this.performanceRepo.createTransactionRepo(txManager);
       const txReservationRepo =
