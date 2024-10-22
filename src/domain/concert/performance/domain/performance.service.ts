@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { InjectDataSource } from '@nestjs/typeorm';
+import { InjectEntityManager } from '@nestjs/typeorm';
 import { ConflictStatusException } from 'src/common';
-import { DataSource, QueryFailedError } from 'typeorm';
+import { EntityManager, QueryFailedError } from 'typeorm';
 import { PerformanceRepository, ReservationRepository } from '../infra';
 import {
   GetPerformancesInfo,
@@ -13,10 +13,9 @@ import { SeatStatus } from './model';
 @Injectable()
 export class PerformanceService {
   constructor(
-    @InjectDataSource()
-    private readonly dataSource: DataSource,
     private readonly performanceRepo: PerformanceRepository,
     private readonly reservationRepo: ReservationRepository,
+    @InjectEntityManager() private readonly manager: EntityManager,
   ) {}
 
   async getPerformances(concertId: number): Promise<GetPerformancesInfo[]> {
@@ -46,7 +45,7 @@ export class PerformanceService {
    * @returns
    */
   async reserveSeat(command: WriteReservationCommand): Promise<number> {
-    return await this.dataSource
+    return await this.manager
       .transaction(async (txManager) => {
         const txPerformanceRepo =
           this.performanceRepo.createTransactionRepo(txManager);
@@ -88,7 +87,7 @@ export class PerformanceService {
   }
 
   async bookingSeat(seatId: number): Promise<void> {
-    await this.dataSource.transaction(async (txManager) => {
+    await this.manager.transaction(async (txManager) => {
       const txPerformanceRepo =
         this.performanceRepo.createTransactionRepo(txManager);
       const txReservationRepo =
