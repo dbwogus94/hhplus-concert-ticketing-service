@@ -5,6 +5,7 @@ import { EntityManager, QueryFailedError } from 'typeorm';
 import { PerformanceRepository, ReservationRepository } from '../infra';
 import {
   GetPerformancesInfo,
+  GetReservationInfo,
   GetSeatsInfo,
   WriteReservationCommand,
 } from './dto';
@@ -76,33 +77,46 @@ export class PerformanceService {
       });
   }
 
-  async getSeatReservation(reservationId: number, userId: number) {
-    const reservation = await this.reservationRepo.getReservationBy({
-      id: reservationId,
-      userId,
-    });
-    if (!reservation.isRequest)
-      throw new ConflictStatusException('"예약신청" 상태가 아닙니다.');
-    return reservation;
+  getSeatReservation(
+    reservationId: number,
+    userId: number,
+  ): (manager?: EntityManager) => Promise<GetReservationInfo> {
+    return async (manager: EntityManager = null) => {
+      const txReservationRepo = manager
+        ? this.reservationRepo.createTransactionRepo(manager)
+        : this.reservationRepo;
+
+      const reservation = await txReservationRepo.getReservationBy({
+        id: reservationId,
+        userId,
+      });
+      if (!reservation.isRequest)
+        throw new ConflictStatusException('"예약신청" 상태가 아닙니다.');
+      return GetReservationInfo.of(reservation);
+    };
   }
 
-  async bookingSeat(seatId: number): Promise<void> {
-    await this.manager.transaction(async (txManager) => {
-      const txPerformanceRepo =
-        this.performanceRepo.createTransactionRepo(txManager);
-      const txReservationRepo =
-        this.reservationRepo.createTransactionRepo(txManager);
+  bookingSeat(seatId: number): (manager?: EntityManager) => Promise<void> {
+    return async (manager: EntityManager = this.manager) => {
+      await manager.transaction(async (txManager) => {
+        const txPerformanceRepo =
+          this.performanceRepo.createTransactionRepo(txManager);
+        const txReservationRepo =
+          this.reservationRepo.createTransactionRepo(txManager);
 
-      const seat = await txPerformanceRepo.getSeatByPk(seatId);
-      seat.booking();
-      await txPerformanceRepo.updateSeatStatus(seat.id, seat.status);
+        const seat = await txPerformanceRepo.getSeatByPk(seatId);
+        seat.booking();
+        await txPerformanceRepo.updateSeatStatus(seat.id, seat.status);
 
-      const reservation = await txReservationRepo.getReservationBy({ seatId });
-      reservation.confirm();
-      await txReservationRepo.updateReservationStatus(
-        reservation.id,
-        reservation.status,
-      );
-    });
+        const reservation = await txReservationRepo.getReservationBy({
+          seatId,
+        });
+        reservation.confirm();
+        await txReservationRepo.updateReservationStatus(
+          reservation.id,
+          reservation.status,
+        );
+      });
+    };
   }
 }
