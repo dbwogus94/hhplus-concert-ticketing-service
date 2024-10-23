@@ -73,8 +73,9 @@ export class MockEntityGenerator {
     queue.status = QueueStatus.WAIT;
     queue.userId = param.userId ?? 1;
     queue.concertId = param.concertId ?? 1;
-    queue.activeAt = null;
+    queue.activedAt = null;
     queue.activeExpireAt = null;
+    queue.activeFirstAccessAt = null;
     return queue;
   }
 
