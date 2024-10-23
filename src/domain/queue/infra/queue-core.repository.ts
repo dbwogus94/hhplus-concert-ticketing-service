@@ -4,6 +4,7 @@ import {
   FindOptions,
   InsertQueueParam,
   QueueRepository,
+  FindOptionsWhere,
 } from './queue.repository';
 import { EntityManager } from 'typeorm';
 import { QueueEntity, QueueStatus } from '../domain';
@@ -15,13 +16,20 @@ export class QueueCoreRepository extends QueueRepository {
     super(QueueEntity, manager);
   }
 
-  override async getQueuesBy(options: FindOptions): Promise<QueueEntity[]> {
+  override async getQueues(options: FindOptions): Promise<QueueEntity[]> {
     return await this.find({ ...options });
   }
 
   override async getQueueByUid(queueUid: string): Promise<QueueEntity> {
     const queue = await this.findOneBy({ uid: queueUid });
     if (!queue) throw new ResourceNotFoundException();
+    return queue;
+  }
+
+  override async findQueueBy(
+    options: FindOptionsWhere,
+  ): Promise<QueueEntity | null> {
+    const queue = await this.findOneBy({ uid: options.status });
     return queue;
   }
 
@@ -45,6 +53,11 @@ export class QueueCoreRepository extends QueueRepository {
       uid: QueueEntity.generateUUIDv4(),
     });
   }
+
+  override async updateQueue(queueEntity: QueueEntity): Promise<void> {
+    await this.update(queueEntity.id, queueEntity);
+  }
+
   override async updateQueues(queueEntities: QueueEntity[]): Promise<void> {
     await this.manager.transaction(async (txManager) => {
       await Promise.all(
@@ -53,5 +66,15 @@ export class QueueCoreRepository extends QueueRepository {
         }),
       );
     });
+  }
+
+  override async updateExpireQueues(date: Date = new Date()): Promise<void> {
+    await this.createQueryBuilder()
+      .setParameters({ status: QueueStatus.ACTIVE, now: date })
+      .update(QueueEntity)
+      .set({ status: QueueStatus.EXPIRE })
+      .where('status = :status')
+      .andWhere('activeExpireAt < :now')
+      .execute();
   }
 }
