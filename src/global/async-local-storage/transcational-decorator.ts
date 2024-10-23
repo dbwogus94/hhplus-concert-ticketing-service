@@ -5,8 +5,10 @@ import { AsyncLocalStorage } from 'async_hooks';
 import {
   TRANSACTIONAL_DACORATOR,
   TransactionalDacoratorOptions,
-} from 'src/common';
+} from '../../common/decorator/transaction.decorator';
 import { Injectable } from '@nestjs/common';
+
+type Storage = { txManager: EntityManager };
 
 @Aspect(TRANSACTIONAL_DACORATOR)
 @Injectable()
@@ -14,8 +16,8 @@ export class TransactionalDecorator
   implements LazyDecorator<any, TransactionalDacoratorOptions>
 {
   constructor(
-    private readonly asyncStorage: AsyncLocalStorage<any>,
-    @InjectDataSource() private readonly dataSource: EntityManager,
+    private readonly asyncStorage: AsyncLocalStorage<Storage>,
+    @InjectDataSource() private readonly manager: EntityManager,
   ) {}
 
   async wrap({
@@ -23,7 +25,7 @@ export class TransactionalDecorator
     metadata,
   }: WrapParams<any, TransactionalDacoratorOptions>) {
     return (...args: any) => {
-      return this.dataSource.transaction(async (txManager) => {
+      return this.manager.transaction(async (txManager) => {
         return this.asyncStorage.run({ txManager }, () => method(...args));
       });
     };
