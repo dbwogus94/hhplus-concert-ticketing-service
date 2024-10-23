@@ -1,32 +1,32 @@
 import { type MockProxy, mock } from 'jest-mock-extended';
-import { DataSource } from 'typeorm';
+import { EntityManager } from 'typeorm';
 
 import {
+  ConflictStatusException,
+  ResourceNotFoundException,
+  RunTimeException,
+} from 'src/common';
+import {
+  GetUserInfo,
   GetUserPointInfo,
   PointRepository,
   UserRepository,
   UserService,
   WriteUserPointCommand,
 } from 'src/domain/user';
-import {
-  ConflictStatusException,
-  ResourceNotFoundException,
-  RunTimeException,
-} from 'src/common';
 import { MockEntityGenerator } from 'test/fixture';
-import { GetUserInfo } from 'src/domain/user';
 
 describe('UserService', () => {
-  let mockDataSource: MockProxy<DataSource>;
+  let mockManamer: MockProxy<EntityManager>;
   let userRepo: MockProxy<UserRepository>;
   let pointRepo: MockProxy<PointRepository>;
   let service: UserService;
 
   beforeEach(() => {
-    mockDataSource = mock<DataSource>();
+    mockManamer = mock<EntityManager>();
     userRepo = mock<UserRepository>();
     pointRepo = mock<PointRepository>();
-    service = new UserService(mockDataSource, userRepo, pointRepo);
+    service = new UserService(userRepo, pointRepo, mockManamer);
   });
 
   describe('getUser', () => {
@@ -133,8 +133,8 @@ describe('UserService', () => {
         const success = ResourceNotFoundException;
 
         // mock transaction
-        mockDataSource.transaction.mockImplementation(async (cb) =>
-          cb(mockDataSource),
+        mockManamer.transaction.mockImplementation(async (cb) =>
+          cb(mockManamer),
         );
         userRepo.createTransactionRepo.mockReturnValue(userRepo);
         pointRepo.createTransactionRepo.mockReturnValue(pointRepo);
@@ -160,8 +160,8 @@ describe('UserService', () => {
         const success = RunTimeException;
 
         // mock transaction
-        mockDataSource.transaction.mockImplementation(async (cb) =>
-          cb(mockDataSource),
+        mockManamer.transaction.mockImplementation(async (cb) =>
+          cb(mockManamer),
         );
         userRepo.createTransactionRepo.mockReturnValue(userRepo);
         pointRepo.createTransactionRepo.mockReturnValue(pointRepo);
@@ -195,8 +195,8 @@ describe('UserService', () => {
         const success = pointEntity.amount + command.amount;
 
         // mock transaction
-        mockDataSource.transaction.mockImplementation(async (cb) =>
-          cb(mockDataSource),
+        mockManamer.transaction.mockImplementation(async (cb) =>
+          cb(mockManamer),
         );
         userRepo.createTransactionRepo.mockReturnValue(userRepo);
         pointRepo.createTransactionRepo.mockReturnValue(pointRepo);
@@ -229,8 +229,8 @@ describe('UserService', () => {
         const success = RunTimeException;
 
         // mock transaction
-        mockDataSource.transaction.mockImplementation(async (cb) =>
-          cb(mockDataSource),
+        mockManamer.transaction.mockImplementation(async (cb) =>
+          cb(mockManamer),
         );
         userRepo.createTransactionRepo.mockReturnValue(userRepo);
         pointRepo.createTransactionRepo.mockReturnValue(pointRepo);
@@ -262,8 +262,8 @@ describe('UserService', () => {
         const success = ConflictStatusException;
 
         // mock transaction
-        mockDataSource.transaction.mockImplementation(async (cb) =>
-          cb(mockDataSource),
+        mockManamer.transaction.mockImplementation(async (cb) =>
+          cb(mockManamer),
         );
         userRepo.createTransactionRepo.mockReturnValue(userRepo);
         pointRepo.createTransactionRepo.mockReturnValue(pointRepo);
@@ -297,8 +297,8 @@ describe('UserService', () => {
         const success = pointEntity.amount - command.amount;
 
         // mock transaction
-        mockDataSource.transaction.mockImplementation(async (cb) =>
-          cb(mockDataSource),
+        mockManamer.transaction.mockImplementation(async (cb) =>
+          cb(mockManamer),
         );
         userRepo.createTransactionRepo.mockReturnValue(userRepo);
         pointRepo.createTransactionRepo.mockReturnValue(pointRepo);
@@ -308,7 +308,7 @@ describe('UserService', () => {
         pointRepo.getPointByPk.mockResolvedValue(pointEntity);
         pointRepo.updatePointWithHistory.mockResolvedValue();
 
-        const result = await service.useUserPoint(command);
+        const result = await service.useUserPoint(command)();
 
         // when & then
         expect(result.amount).toBe(success);
