@@ -39,6 +39,6 @@ export class QueueFacade {
   }
 
   async changeQueueExpireStatus(): Promise<void> {
-    await this.queueService.changeExpireStatusQueues();
+    await this.queueService.changeAllExpireStatus();
   }
 }

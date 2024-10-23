@@ -15,5 +15,6 @@ import { AuthModule } from '../auth';
     QueueService,
     { provide: QueueRepository, useClass: QueueCoreRepository },
   ],
+  exports: [QueueService],
 })
 export class QueueModule {}
