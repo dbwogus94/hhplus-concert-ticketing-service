@@ -1,19 +1,18 @@
 import { Injectable } from '@nestjs/common';
-import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource, QueryFailedError } from 'typeorm';
+import { InjectEntityManager } from '@nestjs/typeorm';
+import { EntityManager, QueryFailedError } from 'typeorm';
 
-import { GetUserInfo, GetUserPointInfo, WriteUserPointCommand } from './dto';
-import { PointRepository, UserRepository } from '../infra';
-import { PointHistoryType } from './model/enum';
 import { ConflictStatusException } from 'src/common';
+import { PointRepository, UserRepository } from '../infra';
+import { GetUserInfo, GetUserPointInfo, WriteUserPointCommand } from './dto';
+import { PointHistoryType } from './model/enum';
 
 @Injectable()
 export class UserService {
   constructor(
-    @InjectDataSource()
-    private readonly dataSource: DataSource,
     private readonly userRepo: UserRepository,
     private readonly pointRepo: PointRepository,
+    @InjectEntityManager() private readonly manager: EntityManager,
   ) {}
 
   async getUser(userId: number): Promise<GetUserInfo> {
@@ -32,7 +31,7 @@ export class UserService {
   ): Promise<GetUserPointInfo> {
     const { amount: chargeAmount, userId } = command;
 
-    return await this.dataSource
+    return await this.manager
       .transaction(async (txManager) => {
         const txUser = this.userRepo.createTransactionRepo(txManager);
         const txPointRepo = this.pointRepo.createTransactionRepo(txManager);
@@ -62,37 +61,39 @@ export class UserService {
       });
   }
 
-  async useUserPoint(
+  useUserPoint(
     command: WriteUserPointCommand,
-  ): Promise<GetUserPointInfo> {
+  ): (manager?: EntityManager) => Promise<GetUserPointInfo> {
     const { amount: chargeAmount, userId } = command;
 
-    return await this.dataSource
-      .transaction(async (txManager) => {
-        const txUser = this.userRepo.createTransactionRepo(txManager);
-        const txPointRepo = this.pointRepo.createTransactionRepo(txManager);
+    return async (manager: EntityManager = this.manager) => {
+      return await manager
+        .transaction(async (txManager) => {
+          const txUser = this.userRepo.createTransactionRepo(txManager);
+          const txPointRepo = this.pointRepo.createTransactionRepo(txManager);
 
-        const user = await txUser.getUserByPK(userId);
-        const point = await txPointRepo.getPointByPk(user.pointId, {
-          lock: { mode: 'pessimistic_write_or_fail' },
+          const user = await txUser.getUserByPK(userId);
+          const point = await txPointRepo.getPointByPk(user.pointId, {
+            lock: { mode: 'pessimistic_write_or_fail' },
+          });
+
+          point.usePoint(chargeAmount);
+
+          await txPointRepo.updatePointWithHistory(user.pointId, {
+            type: PointHistoryType.USE,
+            amount: point.amount,
+            userId,
+          });
+          return GetUserPointInfo.of(point);
+        })
+        .catch((error) => {
+          if (
+            error instanceof QueryFailedError &&
+            error.message.includes('NOWAIT')
+          )
+            throw new ConflictStatusException('포인트 사용 요청 처리중입니다.');
+          else throw error;
         });
-
-        point.usePoint(chargeAmount);
-
-        await txPointRepo.updatePointWithHistory(user.pointId, {
-          type: PointHistoryType.USE,
-          amount: point.amount,
-          userId,
-        });
-        return GetUserPointInfo.of(point);
-      })
-      .catch((error) => {
-        if (
-          error instanceof QueryFailedError &&
-          error.message.includes('NOWAIT')
-        )
-          throw new ConflictStatusException('포인트 사용 요청 처리중입니다.');
-        else throw error;
-      });
+    };
   }
 }

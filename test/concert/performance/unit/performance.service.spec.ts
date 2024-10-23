@@ -1,9 +1,10 @@
 import { type MockProxy, mock } from 'jest-mock-extended';
-import { DataSource } from 'typeorm';
+import { EntityManager } from 'typeorm';
 
 import { ConflictStatusException, ResourceNotFoundException } from 'src/common';
 import {
   GetPerformancesInfo,
+  GetReservationInfo,
   GetSeatsInfo,
   PerformanceRepository,
   PerformanceService,
@@ -15,19 +16,19 @@ import {
 import { MockEntityGenerator } from 'test/fixture';
 
 describe('PerformanceService', () => {
-  let mockDataSource: MockProxy<DataSource>;
+  let mockManamer: MockProxy<EntityManager>;
   let performanceRepo: MockProxy<PerformanceRepository>;
   let reservationRepo: MockProxy<ReservationRepository>;
   let service: PerformanceService;
 
   beforeEach(() => {
-    mockDataSource = mock<DataSource>();
+    mockManamer = mock<EntityManager>();
     performanceRepo = mock<PerformanceRepository>();
     reservationRepo = mock<ReservationRepository>();
     service = new PerformanceService(
-      mockDataSource,
       performanceRepo,
       reservationRepo,
+      mockManamer,
     );
   });
 
@@ -121,8 +122,8 @@ describe('PerformanceService', () => {
         const success = ResourceNotFoundException;
 
         // mock transaction
-        mockDataSource.transaction.mockImplementation(async (cb) =>
-          cb(mockDataSource),
+        mockManamer.transaction.mockImplementation(async (cb) =>
+          cb(mockManamer),
         );
         performanceRepo.createTransactionRepo.mockReturnValue(performanceRepo);
         reservationRepo.createTransactionRepo.mockReturnValue(reservationRepo);
@@ -153,8 +154,8 @@ describe('PerformanceService', () => {
         const success = ConflictStatusException;
 
         // mock transaction
-        mockDataSource.transaction.mockImplementation(async (cb) =>
-          cb(mockDataSource),
+        mockManamer.transaction.mockImplementation(async (cb) =>
+          cb(mockManamer),
         );
         performanceRepo.createTransactionRepo.mockReturnValue(performanceRepo);
         reservationRepo.createTransactionRepo.mockReturnValue(reservationRepo);
@@ -184,8 +185,8 @@ describe('PerformanceService', () => {
         const success = ConflictStatusException;
 
         // mock transaction
-        mockDataSource.transaction.mockImplementation(async (cb) =>
-          cb(mockDataSource),
+        mockManamer.transaction.mockImplementation(async (cb) =>
+          cb(mockManamer),
         );
         performanceRepo.createTransactionRepo.mockReturnValue(performanceRepo);
         reservationRepo.createTransactionRepo.mockReturnValue(reservationRepo);
@@ -220,8 +221,8 @@ describe('PerformanceService', () => {
         performanceRepo.getSeatByPk.mockResolvedValue(seatEntity);
 
         // mock transaction
-        mockDataSource.transaction.mockImplementation(async (cb) =>
-          cb(mockDataSource),
+        mockManamer.transaction.mockImplementation(async (cb) =>
+          cb(mockManamer),
         );
         performanceRepo.createTransactionRepo.mockReturnValue(performanceRepo);
         reservationRepo.createTransactionRepo.mockReturnValue(reservationRepo);
@@ -248,15 +249,20 @@ describe('PerformanceService', () => {
           id: reservationId,
           userId,
         });
+        mockReservation.status = ReservationStatus.REQUEST;
+        const success = GetReservationInfo.of(mockReservation);
 
         // mock
         reservationRepo.getReservationBy.mockResolvedValue(mockReservation);
 
         // when
-        const result = await service.getSeatReservation(reservationId, userId);
+        const result = await service.getSeatReservation(
+          reservationId,
+          userId,
+        )();
 
         // then
-        expect(result).toEqual(mockReservation);
+        expect(result).toEqual(success);
         expect(reservationRepo.getReservationBy).toHaveBeenCalledWith({
           id: reservationId,
           userId,
@@ -302,8 +308,8 @@ describe('PerformanceService', () => {
         const success = ReservationStatus.CONFIRM;
 
         // mock transaction
-        mockDataSource.transaction.mockImplementation(async (cb) =>
-          cb(mockDataSource),
+        mockManamer.transaction.mockImplementation(async (cb) =>
+          cb(mockManamer),
         );
         performanceRepo.createTransactionRepo.mockReturnValue(performanceRepo);
         reservationRepo.createTransactionRepo.mockReturnValue(reservationRepo);
@@ -315,7 +321,7 @@ describe('PerformanceService', () => {
         reservationRepo.updateReservationStatus.mockResolvedValue();
 
         // when
-        await service.bookingSeat(seatId);
+        await service.bookingSeat(seatId)();
 
         // then
         expect(performanceRepo.updateSeatStatus).toHaveBeenCalledWith(
@@ -334,7 +340,7 @@ describe('PerformanceService', () => {
         // const mockSeat = MockEntityGenerator.generateSeat(seatId, 1);
 
         // mock transaction
-        mockDataSource.transaction.mockRejectedValue(
+        mockManamer.transaction.mockRejectedValue(
           new Error('Transaction failed'),
         );
 
