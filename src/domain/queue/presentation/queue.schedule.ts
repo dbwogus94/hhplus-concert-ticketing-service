@@ -52,7 +52,7 @@ export class QueueSchedule implements OnApplicationBootstrap {
     job.start();
   }
 
-  @Cron(QueueSchedule.CON_TIME, {
+  @Cron(CronExpression.EVERY_10_SECONDS, {
     name: QueueSchedule.JOB.CHANGE_QUEUE_EXPIRE_STATUS,
   })
   async changeQueueExpireStatus() {
