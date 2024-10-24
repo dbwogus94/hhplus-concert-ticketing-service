@@ -15,6 +15,9 @@ import {
   WriteReservationCommand,
 } from 'src/domain/concert/performance';
 import { UserModule } from 'src/domain/user';
+import { QueueModule } from 'src/domain/queue';
+import { ScheduleModule } from '@nestjs/schedule';
+import { CustomLoggerModule } from 'src/global';
 
 describe('PerformanceFacade 통합테스트', () => {
   let performanceFacade: PerformanceFacade;
@@ -29,7 +32,10 @@ describe('PerformanceFacade 통합테스트', () => {
           ...typeOrmDataSourceOptions,
           logging: false,
         }),
+        ScheduleModule.forRoot(),
+        CustomLoggerModule.forRoot(),
         UserModule,
+        QueueModule,
       ],
       providers: [
         PerformanceFacade,
@@ -102,6 +108,7 @@ describe('PerformanceFacade 통합테스트', () => {
 
       const command = new WriteReservationCommand({
         userId,
+        queueUid: '',
         performanceId,
         seatId,
       });
@@ -122,6 +129,7 @@ describe('PerformanceFacade 통합테스트', () => {
 
       const command = new WriteReservationCommand({
         userId,
+        queueUid: '',
         performanceId,
         seatId,
       });
@@ -140,6 +148,7 @@ describe('PerformanceFacade 통합테스트', () => {
 
       const command = new WriteReservationCommand({
         userId,
+        queueUid: '',
         performanceId,
         seatId,
       });

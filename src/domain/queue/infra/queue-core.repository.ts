@@ -56,7 +56,7 @@ export class QueueCoreRepository extends QueueRepository {
     queueUid: string,
     param: UpdateQueueParam,
   ): Promise<void> {
-    await this.update(queueUid, { ...param });
+    await this.update({ uid: queueUid }, { ...param });
   }
 
   override async updateQueues(
