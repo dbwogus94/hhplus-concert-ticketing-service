@@ -2,7 +2,12 @@ import { Injectable } from '@nestjs/common';
 
 import { QueueRepository } from '../infra';
 import { QueueEntity, QueueStatus } from './model';
-import { CreateQueueInfo, GetQueueInfo, WriteQueueCommand } from './dto';
+import {
+  CreateQueueInfo,
+  FindActiveQueueInfo,
+  GetQueueInfo,
+  WriteQueueCommand,
+} from './dto';
 
 @Injectable()
 export class QueueService {
@@ -25,24 +30,36 @@ export class QueueService {
     return GetQueueInfo.of({ ...queue, waitingNumber });
   }
 
-  // TODO: 콘서트 별로 어떻게 돌릴지 고민이 필요하다.
+  async findActiveQueue(queueUid: string): Promise<FindActiveQueueInfo | null> {
+    const queue = await this.queueRepo.findOneBy({
+      uid: queueUid,
+      status: QueueStatus.ACTIVE,
+    });
+    if (queue.isFirstAccessAfterActive) {
+      queue.calculateActiveExpire(new Date());
+      await this.queueRepo.updateQueue(queue.uid, queue);
+    }
+
+    return queue ? FindActiveQueueInfo.of(queue) : null;
+  }
+
+  // TODO: 콘서트 별로
   async batchQueueActiveStatus(activeCount: number): Promise<void> {
-    const queues = await this.queueRepo.getQueuesBy({
+    const waitingQueues = await this.queueRepo.getQueues({
       where: { status: QueueStatus.WAIT },
       order: { id: 'ASC' },
       take: activeCount,
     });
-    if (queues.length === 0) return;
+    if (waitingQueues.length === 0) return;
 
-    const updateQueues = queues.map((q) => ({
-      ...q,
+    const queueUids = waitingQueues.map((q) => q.uid);
+    await this.queueRepo.updateQueues(queueUids, {
       status: QueueStatus.ACTIVE,
-    }));
-    await this.queueRepo.updateQueues(updateQueues);
+      activedAt: new Date(),
+    });
   }
 
-  // TODO: 제한 시간 만료
-  async changeExpireStatusQueues(): Promise<void> {
-    // 5분?
+  async changeAllExpireStatus(date: Date = new Date()): Promise<void> {
+    await this.queueRepo.updateAllExpireQueues(date);
   }
 }

@@ -10,9 +10,10 @@ import {
 } from './infra';
 import { PerformanceFacade } from './application';
 import { UserModule } from 'src/domain/user';
+import { QueueModule } from 'src/domain/queue';
 
 @Module({
-  imports: [UserModule],
+  imports: [UserModule, QueueModule],
   controllers: [PerformanceController],
   providers: [
     PerformanceFacade,

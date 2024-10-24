@@ -83,7 +83,8 @@ export class Init1729215044973 implements MigrationInterface {
             \`userId\` int NOT NULL,
             \`status\` varchar(255) NOT NULL,
             \`activeExpireAt\` datetime DEFAULT NULL,
-            \`activeAt\` datetime DEFAULT NULL,
+            \`activedAt\` datetime DEFAULT NULL,
+            \`activeFirstAccessAt\` datetime DEFAULT NULL,
             PRIMARY KEY (\`id\`)
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
         `);

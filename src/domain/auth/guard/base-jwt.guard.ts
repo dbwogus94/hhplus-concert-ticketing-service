@@ -1,4 +1,8 @@
-import { CanActivate, ExecutionContext } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { UserRequest } from 'src/common';
 
 export class BaseJwtGuard implements CanActivate {
@@ -13,10 +17,12 @@ export class BaseJwtGuard implements CanActivate {
 
   protected getJwt(request: UserRequest): string | null {
     const authorization: string | undefined = request.headers['authorization']; // authorization
-    return (
+    const jwt =
       authorization &&
       authorization.startsWith('Bearer') &&
-      authorization.split(' ')[1]
-    );
+      authorization.split(' ')[1];
+
+    if (!jwt) throw new UnauthorizedException();
+    return jwt;
   }
 }

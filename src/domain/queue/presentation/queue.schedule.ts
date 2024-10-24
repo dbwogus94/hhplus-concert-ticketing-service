@@ -52,10 +52,9 @@ export class QueueSchedule implements OnApplicationBootstrap {
     job.start();
   }
 
-  // @Cron(QueueSchedule.CON_TIME, {
-  //   name: QueueSchedule.JOB.CHANGE_QUEUE_EXPIRE_STATUS,
-  // })
-  // TODO: 서비스 제한시간이 자닌 토큰 만료 처리
+  @Cron(CronExpression.EVERY_10_SECONDS, {
+    name: QueueSchedule.JOB.CHANGE_QUEUE_EXPIRE_STATUS,
+  })
   async changeQueueExpireStatus() {
     this.logger.warn(`[${QueueSchedule.JOB.CHANGE_QUEUE_EXPIRE_STATUS}] start`);
 

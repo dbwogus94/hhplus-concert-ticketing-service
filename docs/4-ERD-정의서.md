@@ -15,7 +15,7 @@ erDiagram
         QueueStatus status
         datetime createdAt
         datetime expireAt
-        datetime activeAt
+        datetime activedAt
     }
 
     %% 콘서트 예약 서비스

@@ -1,7 +1,5 @@
 /** 콘서트 좌석 상태 */
 export enum QueueStatus {
-  /** 없음 */
-  NONE = 'None',
   /** 대기 */
   WAIT = 'Wait',
   /** 활성 */
