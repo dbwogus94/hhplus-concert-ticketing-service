@@ -5,7 +5,8 @@ import {
 } from '@nestjs/common';
 
 import { UserInfo, UserRequest } from 'src/common';
-import { QueueService } from 'src/domain/queue';
+// import { QueueService } from 'src/domain/queue';
+import { QueueService } from '../../queue/domain/queue.service';
 import { AuthService } from '../auth.service';
 import { BaseJwtGuard } from './base-jwt.guard';
 
