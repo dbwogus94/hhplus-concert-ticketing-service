@@ -24,8 +24,10 @@ export class ConvertExceptionInterceptor implements NestInterceptor {
       catchError((err) =>
         throwError(() => {
           if (err instanceof HttpException) {
+            this.logger.debug(err);
             return err;
           } else if (err instanceof ApplicationException) {
+            this.logger.debug(err);
             return err.toHttpException();
           } else {
             this.logger.error(err);
