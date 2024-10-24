@@ -37,31 +37,29 @@ export class QueueService {
     });
     if (queue.isFirstAccessAfterActive) {
       queue.calculateActiveExpire(new Date());
-      await this.queueRepo.updateQueue(queue);
+      await this.queueRepo.updateQueue(queue.uid, queue);
     }
 
     return queue ? FindActiveQueueInfo.of(queue) : null;
   }
 
+  // TODO: 콘서트 별로
   async batchQueueActiveStatus(activeCount: number): Promise<void> {
-    const queues = await this.queueRepo.getQueues({
+    const waitingQueues = await this.queueRepo.getQueues({
       where: { status: QueueStatus.WAIT },
       order: { id: 'ASC' },
       take: activeCount,
     });
-    if (queues.length === 0) return;
+    if (waitingQueues.length === 0) return;
 
-    const updateQueues = queues.map((q) =>
-      this.queueRepo.create({
-        ...q,
-        status: QueueStatus.ACTIVE,
-        activedAt: new Date(),
-      }),
-    );
-    await this.queueRepo.updateQueues(updateQueues);
+    const queueUids = waitingQueues.map((q) => q.uid);
+    await this.queueRepo.updateQueues(queueUids, {
+      status: QueueStatus.ACTIVE,
+      activedAt: new Date(),
+    });
   }
 
-  async changeAllExpireStatus(): Promise<void> {
-    await this.queueRepo.updateExpireQueues(new Date());
+  async changeAllExpireStatus(date: Date = new Date()): Promise<void> {
+    await this.queueRepo.updateAllExpireQueues(date);
   }
 }

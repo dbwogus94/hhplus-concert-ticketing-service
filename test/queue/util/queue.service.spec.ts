@@ -20,7 +20,7 @@ describe('QueueService', () => {
   });
 
   describe('createQueue', () => {
-    it('큐를 생성하고 CreateQueueInfo를 반환한다', async () => {
+    it('큐를 대기 상태로, CreateQueueInfo를 반환한다', async () => {
       // given
       const command = WriteQueueCommand.from({
         userId: 1,
@@ -30,6 +30,8 @@ describe('QueueService', () => {
         id: 1,
         concertId: command.concertId,
       });
+      queueEntity.status = QueueStatus.WAIT;
+
       const success = CreateQueueInfo.of(queueEntity);
 
       // mock
@@ -82,47 +84,65 @@ describe('QueueService', () => {
           concertId: 1,
         });
       });
-      const expectedUpdateQueues: QueueEntity[] = waitingQueues.map((que) => {
-        return { ...que, status: QueueStatus.ACTIVE };
-      });
+      const queueUids = waitingQueues.map((q) => q.uid);
       const activeCount = 3;
 
       // mock
-      queueRepo.getQueuesBy.mockResolvedValue(waitingQueues);
+      queueRepo.getQueues.mockResolvedValue(waitingQueues);
       queueRepo.updateQueues.mockResolvedValue();
 
       // when
       await service.batchQueueActiveStatus(activeCount);
 
       // then
-      expect(queueRepo.getQueuesBy).toHaveBeenCalledWith({
+      expect(queueRepo.getQueues).toHaveBeenCalledWith({
         where: { status: QueueStatus.WAIT },
         order: { id: 'ASC' },
         take: activeCount,
       });
-      expect(queueRepo.updateQueues).toHaveBeenCalledWith(expectedUpdateQueues);
+
+      expect(queueRepo.updateQueues).toHaveBeenCalledWith(queueUids, {
+        status: QueueStatus.ACTIVE,
+        activedAt: new Date(),
+      });
     });
 
     it('대기 중인 큐가 없으면 업데이트하지 않는다', async () => {
       // given
       const activeCount = 3;
-      const waitingQueues: QueueEntity[] = [];
+      const emptyWaitingQueues: QueueEntity[] = [];
 
       // mock
-      queueRepo.getQueuesBy.mockResolvedValue(waitingQueues);
-      queueRepo.updateQueues.mockResolvedValue();
+      queueRepo.getQueues.mockResolvedValue(emptyWaitingQueues);
+      // queueRepo.updateQueues.mockResolvedValue();
 
       // when
       await service.batchQueueActiveStatus(activeCount);
 
       // then
-      expect(queueRepo.getQueuesBy).toHaveBeenCalledWith({
+      expect(queueRepo.getQueues).toHaveBeenCalledWith({
         where: { status: QueueStatus.WAIT },
         order: { id: 'ASC' },
         take: activeCount,
       });
 
       expect(queueRepo.updateQueues).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('changeAllExpireStatus', () => {
+    it('현재 시간 기준 사용시간이 지난 활성 상태의 큐를 모두 만료 상태로 변경한다.', async () => {
+      // given
+      const now = new Date();
+
+      // mock
+      queueRepo.updateAllExpireQueues.mockResolvedValue();
+
+      // when
+      await service.changeAllExpireStatus(now);
+
+      // then
+      expect(queueRepo.updateAllExpireQueues).toHaveBeenCalledWith(now);
     });
   });
 });
