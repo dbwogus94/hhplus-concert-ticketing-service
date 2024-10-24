@@ -14,6 +14,7 @@ import {
   WriteReservationCommand,
 } from 'src/domain/concert/performance';
 import { MockEntityGenerator } from 'test/fixture';
+import { QueueEntity } from 'src/domain/queue';
 
 describe('PerformanceService', () => {
   let mockManamer: MockProxy<EntityManager>;
@@ -116,6 +117,7 @@ describe('PerformanceService', () => {
         // given
         const command = WriteReservationCommand.from({
           userId: 1,
+          queueUid: QueueEntity.generateUUIDv4(),
           performanceId: 10,
           seatId: 100,
         });
@@ -142,6 +144,7 @@ describe('PerformanceService', () => {
         // given
         const command = WriteReservationCommand.from({
           userId: 1,
+          queueUid: QueueEntity.generateUUIDv4(),
           performanceId: 10,
           seatId: 15,
         });
@@ -174,6 +177,7 @@ describe('PerformanceService', () => {
         // given
         const command = WriteReservationCommand.from({
           userId: 1,
+          queueUid: QueueEntity.generateUUIDv4(),
           performanceId: 10,
           seatId: 15,
         });
@@ -205,6 +209,7 @@ describe('PerformanceService', () => {
         // given
         const command = WriteReservationCommand.from({
           userId: 1,
+          queueUid: QueueEntity.generateUUIDv4(),
           performanceId: 10,
           seatId: 15,
         });
@@ -231,7 +236,7 @@ describe('PerformanceService', () => {
         reservationRepo.insertOne.mockResolvedValue(newReservationId);
 
         // when
-        const results = await service.reserveSeat(command);
+        const results = await service.reserveSeat(command)();
 
         // then
         expect(results).toBe(success);

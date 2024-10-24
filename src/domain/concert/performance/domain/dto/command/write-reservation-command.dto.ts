@@ -2,6 +2,7 @@ type WriteReservationCommandProp = {
   readonly userId: number;
   readonly performanceId: number;
   readonly seatId: number;
+  readonly queueUid: string;
 };
 
 export class WriteReservationCommand {
@@ -17,6 +18,10 @@ export class WriteReservationCommand {
 
   get userId() {
     return this.prop.userId;
+  }
+
+  get queueUid() {
+    return this.prop.queueUid;
   }
 
   /** 여러개의 매개변수 */

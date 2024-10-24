@@ -9,18 +9,30 @@ import {
   SeatStatus,
   WriteReservationCommand,
 } from 'src/domain/concert/performance';
+import { QueueEntity, QueueService } from 'src/domain/queue';
 import { GetUserInfo, UserService } from 'src/domain/user';
 import { MockEntityGenerator } from 'test/fixture';
+import { EntityManager } from 'typeorm';
 
 describe('PerformanceFacade', () => {
+  let mockManamer: MockProxy<EntityManager>;
   let performanceService: MockProxy<PerformanceService>;
   let userService: MockProxy<UserService>;
+  let queueService: MockProxy<QueueService>;
   let facade: PerformanceFacade;
 
   beforeEach(() => {
+    mockManamer = mock<EntityManager>();
     performanceService = mock<PerformanceService>();
     userService = mock<UserService>();
-    facade = new PerformanceFacade(performanceService, userService);
+    queueService = mock<QueueService>();
+
+    facade = new PerformanceFacade(
+      mockManamer,
+      performanceService,
+      userService,
+      queueService,
+    );
   });
 
   describe('getPerformances', () => {
@@ -102,19 +114,22 @@ describe('PerformanceFacade', () => {
 
   describe('reserveSeat', () => {
     describe('실패한다.', () => {
-      it('TODO: 유저가 존재하지 않으면 실패힌다.', async () => {
+      it('유저가 존재하지 않으면 실패힌다.', async () => {
         // given
         const command = WriteReservationCommand.from({
           userId: 1,
+          queueUid: QueueEntity.generateUUIDv4(),
           performanceId: 10,
           seatId: 100,
         });
         const success = ResourceNotFoundException;
 
         // mock
-        performanceService.reserveSeat.mockRejectedValue(
-          new ResourceNotFoundException(),
-        );
+        performanceService.reserveSeat
+          .calledWith(command)
+          .mockReturnValue(() =>
+            Promise.reject(new ResourceNotFoundException()),
+          );
 
         // when & then
         try {
@@ -130,15 +145,18 @@ describe('PerformanceFacade', () => {
         // given
         const command = WriteReservationCommand.from({
           userId: 1,
+          queueUid: QueueEntity.generateUUIDv4(),
           performanceId: 10,
           seatId: 100,
         });
         const success = ResourceNotFoundException;
 
         // mock
-        performanceService.reserveSeat.mockRejectedValue(
-          new ResourceNotFoundException(),
-        );
+        performanceService.reserveSeat
+          .calledWith(command)
+          .mockReturnValue(() =>
+            Promise.reject(new ResourceNotFoundException()),
+          );
 
         // when & then
         try {
@@ -154,15 +172,18 @@ describe('PerformanceFacade', () => {
         // given
         const command = WriteReservationCommand.from({
           userId: 1,
+          queueUid: QueueEntity.generateUUIDv4(),
           performanceId: 10,
           seatId: 15,
         });
         const success = ConflictStatusException;
 
         // mock
-        performanceService.reserveSeat.mockRejectedValue(
-          new ConflictStatusException(),
-        );
+        performanceService.reserveSeat
+          .calledWith(command)
+          .mockReturnValue(() =>
+            Promise.reject(new ResourceNotFoundException()),
+          );
 
         try {
           // when
@@ -177,15 +198,18 @@ describe('PerformanceFacade', () => {
         // given
         const command = WriteReservationCommand.from({
           userId: 1,
+          queueUid: QueueEntity.generateUUIDv4(),
           performanceId: 10,
           seatId: 15,
         });
         const success = ConflictStatusException;
 
         // mock
-        performanceService.reserveSeat.mockRejectedValue(
-          new ConflictStatusException(),
-        );
+        performanceService.reserveSeat
+          .calledWith(command)
+          .mockReturnValue(() =>
+            Promise.reject(new ResourceNotFoundException()),
+          );
 
         try {
           // when
@@ -202,6 +226,7 @@ describe('PerformanceFacade', () => {
         // given
         const command = WriteReservationCommand.from({
           userId: 1,
+          queueUid: QueueEntity.generateUUIDv4(),
           performanceId: 10,
           seatId: 15,
         });
@@ -215,8 +240,17 @@ describe('PerformanceFacade', () => {
         const success = newReservationId;
 
         // mock
+        mockManamer.transaction.mockImplementation(async (cb) =>
+          cb(mockManamer),
+        );
         userService.getUser.mockResolvedValue(userInfo);
-        performanceService.reserveSeat.mockResolvedValue(newReservationId);
+
+        performanceService.reserveSeat
+          .calledWith(command)
+          .mockReturnValue(() => Promise.resolve(newReservationId));
+        queueService.expireQueue
+          .calledWith(command.queueUid)
+          .mockReturnValue(() => Promise.resolve());
 
         // when
         const results = await facade.reserveSeat(command);
@@ -224,14 +258,45 @@ describe('PerformanceFacade', () => {
         // then
         expect(results).toBe(success);
       });
+    });
 
-      describe('만료한다.', () => {
-        it.skip('좌석 임시예약에 성공하면 토큰이 만료된다.', async () => {
-          // given
-          // mock
-          // when
-          // then
+    // 단위테스트에서 확인이 가능한가?
+    describe.skip('만료한다.', () => {
+      it.skip('좌석 임시예약에 성공하면 토큰이 만료된다.', async () => {
+        // given
+        const command = WriteReservationCommand.from({
+          userId: 1,
+          queueUid: QueueEntity.generateUUIDv4(),
+          performanceId: 10,
+          seatId: 15,
         });
+
+        const userEntity = MockEntityGenerator.generateUser({
+          id: command.userId,
+          pointId: 10,
+        });
+        const userInfo = GetUserInfo.of(userEntity);
+        const newReservationId = 1;
+        const success = newReservationId;
+
+        // mock
+        mockManamer.transaction.mockImplementation(async (cb) =>
+          cb(mockManamer),
+        );
+        userService.getUser.mockResolvedValue(userInfo);
+
+        performanceService.reserveSeat
+          .calledWith(command)
+          .mockReturnValue(() => Promise.resolve(newReservationId));
+        queueService.expireQueue
+          .calledWith(command.queueUid)
+          .mockReturnValue(() => Promise.resolve());
+
+        // when
+        const results = await facade.reserveSeat(command);
+
+        // then
+        expect(results).toBe(success);
       });
     });
   });
