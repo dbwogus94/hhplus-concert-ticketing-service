@@ -18,7 +18,7 @@ export function httpLogger(logger: Logger) {
       const message = `[Http] ${method} ${originalUrl} ${httpVersion} ${statusCode} ${responseMsTime}ms `;
       if (statusCode >= 500) return logger.error(message);
       if (statusCode >= 400) return logger.warn(message);
-      return logger.debug(message);
+      return logger.log(message);
     });
     next();
   };
