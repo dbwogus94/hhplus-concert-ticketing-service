@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { EntityManager } from 'typeorm';
 
 import { QueueRepository } from '../infra';
 import { QueueEntity, QueueStatus } from './model';
@@ -43,7 +44,6 @@ export class QueueService {
     return queue ? FindActiveQueueInfo.of(queue) : null;
   }
 
-  // TODO: 콘서트 별로
   async batchQueueActiveStatus(activeCount: number): Promise<void> {
     const waitingQueues = await this.queueRepo.getQueues({
       where: { status: QueueStatus.WAIT },
@@ -61,5 +61,17 @@ export class QueueService {
 
   async changeAllExpireStatus(date: Date = new Date()): Promise<void> {
     await this.queueRepo.updateAllExpireQueues(date);
+  }
+
+  expireQueue(queueUid: string): (manager?: EntityManager) => Promise<void> {
+    return async (manager: EntityManager = null) => {
+      const queueRepo = manager
+        ? this.queueRepo.createTransactionRepo(manager)
+        : this.queueRepo;
+
+      await queueRepo.updateQueue(queueUid, {
+        status: QueueStatus.EXPIRE,
+      });
+    };
   }
 }

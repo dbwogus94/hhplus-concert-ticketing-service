@@ -10,9 +10,9 @@ import { PointHistoryType } from './model/enum';
 @Injectable()
 export class UserService {
   constructor(
+    @InjectEntityManager() private readonly manager: EntityManager,
     private readonly userRepo: UserRepository,
     private readonly pointRepo: PointRepository,
-    @InjectEntityManager() private readonly manager: EntityManager,
   ) {}
 
   async getUser(userId: number): Promise<GetUserInfo> {

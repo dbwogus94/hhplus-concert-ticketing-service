@@ -68,12 +68,14 @@ export class PerformanceController {
     @Param('performanceId', ParseIntPipe) performanceId: number,
     @Param('seatId', ParseIntPipe) seatId: number,
     @GetUserInfoDecorator('userId') userId: number,
+    @GetUserInfoDecorator('queueUid') queueUid: string,
   ): Promise<PostSeatReservationResponse> {
     const reservationId = await this.performanceFacade.reserveSeat(
       WriteReservationCommand.from({
         userId,
         seatId,
         performanceId,
+        queueUid,
       }),
     );
     return PostSeatReservationResponse.of({ reservationId });

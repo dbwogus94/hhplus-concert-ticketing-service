@@ -1,4 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import { InjectEntityManager } from '@nestjs/typeorm';
+import { EntityManager } from 'typeorm';
+
 import {
   GetPerformancesInfo,
   GetSeatsInfo,
@@ -6,12 +9,15 @@ import {
   WriteReservationCommand,
 } from '../domain';
 import { UserService } from 'src/domain/user';
+import { QueueService } from 'src/domain/queue';
 
 @Injectable()
 export class PerformanceFacade {
   constructor(
+    @InjectEntityManager() private readonly manager: EntityManager,
     private readonly performanceService: PerformanceService,
     private readonly userService: UserService,
+    private readonly queueService: QueueService,
   ) {}
 
   async getPerformances(concertId: number): Promise<GetPerformancesInfo[]> {
@@ -19,18 +25,22 @@ export class PerformanceFacade {
       await this.performanceService.getPerformances(concertId);
     return performances;
   }
+
   async getAvailableSeats(performanceId: number): Promise<GetSeatsInfo[]> {
     const seats =
       await this.performanceService.getAvailableSeats(performanceId);
     return seats;
   }
 
-  async reserveSeat(command: WriteReservationCommand): Promise<number> {
-    await this.userService.getUserPoint(command.userId);
+  async reserveSeat(command: WriteReservationCommand) {
+    await this.userService.getUser(command.userId);
 
-    // 객체 지향적으로 UserInfo를 넣게 하자
-    const reservationId = await this.performanceService.reserveSeat(command);
-    // TODO: wait-queue 토큰 만료 로직
-    return reservationId;
+    return await this.manager.transaction(async (txManager) => {
+      const reservationId =
+        this.performanceService.reserveSeat(command)(txManager);
+
+      await this.queueService.expireQueue(command.queueUid)(txManager);
+      return reservationId;
+    });
   }
 }
