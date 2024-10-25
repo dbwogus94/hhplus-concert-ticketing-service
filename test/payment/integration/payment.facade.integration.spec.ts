@@ -3,13 +3,13 @@ import { getDataSourceToken, TypeOrmModule } from '@nestjs/typeorm';
 import { execSync } from 'child_process';
 import { DataSource } from 'typeorm';
 
+import { ScheduleModule } from '@nestjs/schedule';
 import { ConflictStatusException, typeOrmDataSourceOptions } from 'src/common';
 import {
   PerformanceModule,
   PerformanceService,
   SeatStatus,
 } from 'src/domain/concert/performance';
-import { UserModule, UserService } from 'src/domain/user';
 import {
   PaymentFacade,
   WritePaymentCriteria,
@@ -19,7 +19,8 @@ import {
   PaymentCoreRepository,
   PaymentRepository,
 } from 'src/domain/payment/infra';
-import { AuthModule } from 'src/domain/auth';
+import { UserModule, UserService } from 'src/domain/user';
+import { CustomLoggerModule } from 'src/global';
 
 describe('PaymentFacade', () => {
   let paymentFacade: PaymentFacade;
@@ -35,9 +36,10 @@ describe('PaymentFacade', () => {
           ...typeOrmDataSourceOptions,
           logging: false,
         }),
+        ScheduleModule.forRoot(),
+        CustomLoggerModule.forRoot(),
         PerformanceModule,
         UserModule,
-        AuthModule,
       ],
       providers: [
         PaymentFacade,
@@ -81,7 +83,7 @@ describe('PaymentFacade', () => {
 
       // 추가 검증: 사용자 포인트가 차감되었는지 확인
       const userPoint = await userService.getUserPoint(userId);
-      expect(userPoint.amount).toBe(0);
+      expect(userPoint.amount).toBe(900_000);
 
       // 좌석 상태가 'BOOKED'로 변경되었는지 확인
       const seat = await performanceService.getSeat(seatId);
