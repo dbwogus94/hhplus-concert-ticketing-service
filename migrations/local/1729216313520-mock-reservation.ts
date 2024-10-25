@@ -26,14 +26,14 @@ export class MockReservation1729216313520 implements MigrationInterface {
     });
 
     for (const point of points) {
-      point.amount = 100_000;
+      point.amount = 1_000_000;
       await queryRunner.manager.save(PointEntity, point);
 
       // 포인트 충전 히스토리 생성
       const findUser = users.find((u) => u.pointId === point.id);
       await queryRunner.manager.save(PointHistoryEntity, {
         userId: findUser.id,
-        amount: 200000,
+        amount: 100_000,
         type: PointHistoryType.CHARGE,
       });
     }
