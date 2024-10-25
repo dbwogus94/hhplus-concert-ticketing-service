@@ -16,7 +16,7 @@ import {
   WriteUserPointCommand,
 } from 'src/domain/user';
 
-describe('UserFacade', () => {
+describe('UserFacade 통합 테스트', () => {
   let userFacade: UserFacade;
   let dataSource: DataSource;
 
@@ -61,7 +61,7 @@ describe('UserFacade', () => {
     it('사용자의 포인트를 조회해야 한다', async () => {
       // Given
       const userId = 1;
-      const initialPoint = 100_000;
+      const initialPoint = 1_000_000;
 
       // When
       const result = await userFacade.getUserPoint(userId);
@@ -86,7 +86,7 @@ describe('UserFacade', () => {
     it('사용자의 포인트를 성공적으로 충전해야 한다', async () => {
       // Given
       const userId = 1;
-      const initialPoint = 100_000;
+      const initialPoint = 1_000_000;
       const chargeAmount = 500;
 
       const command = WriteUserPointCommand.from({
