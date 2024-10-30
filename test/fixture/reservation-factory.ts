@@ -30,6 +30,6 @@ export class ReservationFactory {
   }
 
   static createConfirm(override: Partial<ReservationProperty> = {}) {
-    return ReservationFactory.create(override);
+    return ReservationFactory.create(override).confirm();
   }
 }
