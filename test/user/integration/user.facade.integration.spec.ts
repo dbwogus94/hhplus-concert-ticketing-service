@@ -1,20 +1,24 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getDataSourceToken, TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
-import { execSync } from 'child_process';
 
 import { typeOrmDataSourceOptions } from 'src/common';
 
 import { ResourceNotFoundException } from 'src/common';
 import {
   PointCoreRepository,
+  PointEntity,
+  PointHistoryEntity,
   PointRepository,
   UserCoreRepository,
+  UserEntity,
   UserFacade,
   UserRepository,
   UserService,
   WriteUserPointCommand,
 } from 'src/domain/user';
+import { PointFactory } from 'test/fixture/point-factory';
+import { UserFactory } from 'test/fixture/user-factory';
 
 describe('UserFacade 통합 테스트', () => {
   let userFacade: UserFacade;
@@ -25,6 +29,8 @@ describe('UserFacade 통합 테스트', () => {
       imports: [
         TypeOrmModule.forRoot({
           ...typeOrmDataSourceOptions,
+          synchronize: true,
+          dropSchema: true,
           logging: false,
         }),
       ],
@@ -43,14 +49,13 @@ describe('UserFacade 통합 테스트', () => {
     }).compile();
 
     userFacade = module.get<UserFacade>(UserFacade);
-    // userService = module.get<UserService>(UserService);
-
     dataSource = module.get<DataSource>(getDataSourceToken());
   });
 
-  beforeEach(() => {
-    execSync('npm run db:drop', { stdio: 'inherit' });
-    execSync('npm run db:migrate:up', { stdio: 'inherit' });
+  beforeEach(async () => {
+    await dataSource.manager.clear(UserEntity);
+    await dataSource.manager.clear(PointEntity);
+    await dataSource.manager.clear(PointHistoryEntity);
   });
 
   afterAll(async () => {
@@ -61,7 +66,14 @@ describe('UserFacade 통합 테스트', () => {
     it('사용자의 포인트를 조회해야 한다', async () => {
       // Given
       const userId = 1;
+      const pointId = 1;
       const initialPoint = 1_000_000;
+      await dataSource.manager.save(
+        PointFactory.create({ id: pointId, amount: 1_000_000 }),
+      );
+      await dataSource.manager.save(
+        UserFactory.create({ id: userId, pointId }),
+      );
 
       // When
       const result = await userFacade.getUserPoint(userId);
@@ -85,21 +97,27 @@ describe('UserFacade 통합 테스트', () => {
   describe('chargeUserPoint', () => {
     it('사용자의 포인트를 성공적으로 충전해야 한다', async () => {
       // Given
-      const userId = 1;
-      const initialPoint = 1_000_000;
-      const chargeAmount = 500;
 
       const command = WriteUserPointCommand.from({
-        userId,
-        amount: chargeAmount,
+        userId: 1,
+        amount: 500,
       });
+      const pointId = 1;
+      const initialPoint = 1_000_000;
+
+      await dataSource.manager.save(
+        PointFactory.create({ id: pointId, amount: initialPoint }),
+      );
+      await dataSource.manager.save(
+        UserFactory.create({ id: command.userId, pointId }),
+      );
 
       // When
       const result = await userFacade.chargeUserPoint(command);
 
       // Then
       expect(result).toBeDefined();
-      expect(result.amount).toBe(initialPoint + chargeAmount);
+      expect(result.amount).toBe(initialPoint + command.amount);
     });
 
     it('존재하지 않는 사용자의 포인트를 충전하려고 하면 에러가 발생해야 한다', async () => {
