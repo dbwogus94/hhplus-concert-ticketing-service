@@ -1,7 +1,7 @@
-import { Column, Entity } from 'typeorm';
 import * as crypto from 'crypto';
+import { Column, Entity } from 'typeorm';
 
-import { BaseEntity } from 'src/common';
+import { BaseEntity, ConflictStatusException } from 'src/common';
 import { QueueStatus } from '../../domain';
 
 @Entity('queue')
@@ -35,6 +35,22 @@ export class QueueEntity extends BaseEntity {
     return crypto.randomUUID();
   }
 
+  /**
+   * 활성화 가능 여부
+   * @returns {boolean}
+   */
+  get isActive(): boolean {
+    return this.status === QueueStatus.WAIT;
+  }
+
+  /**
+   * 만료 가능 여부
+   * @returns {boolean}
+   */
+  get isExpire(): boolean {
+    return this.status === QueueStatus.WAIT;
+  }
+
   get isFirstAccessAfterActive(): boolean {
     return (
       this.status === QueueStatus.ACTIVE && this.activeFirstAccessAt === null
@@ -58,6 +74,22 @@ export class QueueEntity extends BaseEntity {
       this.activeFirstAccessAt,
       QueueEntity.MAX_ACTIVE_MINUTE,
     );
+    return this;
+  }
+
+  active(): this {
+    if (!this.isActive) {
+      throw new ConflictStatusException('활성화 가능 상태가 아닙니다.');
+    }
+    this.status = QueueStatus.ACTIVE;
+    return this;
+  }
+
+  expire(): this {
+    if (!this.isActive) {
+      throw new ConflictStatusException('만료 가능 상태가 아닙니다.');
+    }
+    this.status = QueueStatus.EXPIRE;
     return this;
   }
 }
