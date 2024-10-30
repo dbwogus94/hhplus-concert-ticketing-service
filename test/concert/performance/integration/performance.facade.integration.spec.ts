@@ -1,23 +1,31 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getDataSourceToken, TypeOrmModule } from '@nestjs/typeorm';
-import { execSync } from 'child_process';
 import { DataSource } from 'typeorm';
 
+import { ScheduleModule } from '@nestjs/schedule';
 import { ConflictStatusException, typeOrmDataSourceOptions } from 'src/common';
 import {
+  ConcertEntity,
   PerformanceCoreRepository,
+  PerformanceEntity,
   PerformanceFacade,
   PerformanceRepository,
   PerformanceService,
   ReservationCoreRepository,
+  ReservationEntity,
   ReservationRepository,
+  SeatEntity,
   SeatStatus,
   WriteReservationCommand,
 } from 'src/domain/concert/performance';
-import { UserModule } from 'src/domain/user';
 import { QueueModule } from 'src/domain/queue';
-import { ScheduleModule } from '@nestjs/schedule';
+import { UserEntity, UserModule } from 'src/domain/user';
 import { CustomLoggerModule } from 'src/global';
+import { ConcertFactory } from 'test/fixture/concert-factory';
+import { PerformanceFactory } from 'test/fixture/performance-factory';
+import { SeatFactory } from 'test/fixture/seat-factory';
+import { UserFactory } from 'test/fixture/user-factory';
+import { ReservationFactory } from 'test/fixture/reservation-factory';
 
 describe('PerformanceFacade 통합테스트', () => {
   let performanceFacade: PerformanceFacade;
@@ -30,6 +38,8 @@ describe('PerformanceFacade 통합테스트', () => {
       imports: [
         TypeOrmModule.forRoot({
           ...typeOrmDataSourceOptions,
+          synchronize: true,
+          dropSchema: true,
           logging: false,
         }),
         ScheduleModule.forRoot(),
@@ -52,17 +62,17 @@ describe('PerformanceFacade 통합테스트', () => {
     }).compile();
 
     performanceFacade = module.get<PerformanceFacade>(PerformanceFacade);
-    // performanceService = module.get<PerformanceService>(PerformanceService);
-    // userService = module.get<UserService>(UserService);
 
     // DataSource 객체 가져오기
     dataSource = module.get<DataSource>(getDataSourceToken());
   });
 
-  beforeEach(() => {
-    // 데이터베이스 초기화 및 마이그레이션 실행
-    execSync('npm run db:drop', { stdio: 'inherit' });
-    execSync('npm run db:migrate:up', { stdio: 'inherit' });
+  beforeEach(async () => {
+    await dataSource.manager.clear(PerformanceEntity);
+    await dataSource.manager.clear(ConcertEntity);
+    await dataSource.manager.clear(ReservationEntity);
+    await dataSource.manager.clear(SeatEntity);
+    await dataSource.manager.clear(UserEntity);
   });
 
   afterAll(async () => {
@@ -72,6 +82,10 @@ describe('PerformanceFacade 통합테스트', () => {
   describe('getPerformances', () => {
     it('콘서트 Id에 해당하는 공연 리스트를 조회한다.', async () => {
       // Given
+      await dataSource.manager.save(ConcertFactory.create({ id: 1 }));
+      await dataSource.manager.save(
+        PerformanceFactory.create({ concertId: 1 }),
+      );
       const concertId = 1;
 
       // When
@@ -87,6 +101,10 @@ describe('PerformanceFacade 통합테스트', () => {
   describe('getAvailableSeats', () => {
     it('공연 Id에 해당하는 예약가능한 좌석 리스트를 조회한다.', async () => {
       // Given
+      await dataSource.manager.save(PerformanceFactory.create({ id: 1 }));
+      await dataSource.manager.save(
+        SeatFactory.create({ performanceId: 1, id: 12 }),
+      );
       const performanceId = 1;
 
       // When
@@ -102,9 +120,14 @@ describe('PerformanceFacade 통합테스트', () => {
   describe('reserveSeat', () => {
     it('선택한 좌석을 예약한다.', async () => {
       // Given
+      await dataSource.manager.save(UserFactory.create({ id: 11 }));
+      await dataSource.manager.save(PerformanceFactory.create({ id: 1 }));
+      await dataSource.manager.save(
+        SeatFactory.create({ performanceId: 1, id: 12 }),
+      );
       const userId = 11;
       const performanceId = 1;
-      const seatId = 11;
+      const seatId = 12;
 
       const command = new WriteReservationCommand({
         userId,
@@ -123,6 +146,10 @@ describe('PerformanceFacade 통합테스트', () => {
 
     it('좌석이 예약된 경우 충돌 예외가 발생한다.', async () => {
       // Given
+      await dataSource.manager.save(UserFactory.create({ id: 1 }));
+      await dataSource.manager.save(PerformanceFactory.create({ id: 1 }));
+      await dataSource.manager.save(SeatFactory.createBooked({ id: 1 }));
+
       const userId = 1;
       const performanceId = 1;
       const seatId = 1;
@@ -142,19 +169,29 @@ describe('PerformanceFacade 통합테스트', () => {
 
     it('좌석을 중복 예약하는 경우 충돌 예외가 발생한다.', async () => {
       // Given
-      const userId = 11;
-      const performanceId = 1;
-      const seatId = 11;
-
       const command = new WriteReservationCommand({
-        userId,
+        userId: 1,
         queueUid: '',
-        performanceId,
-        seatId,
+        performanceId: 11,
+        seatId: 1,
       });
 
-      // Reserve the seat first time
-      await performanceFacade.reserveSeat(command);
+      await dataSource.manager.save(UserFactory.create({ id: command.userId }));
+      await dataSource.manager.save(
+        PerformanceFactory.create({ id: command.performanceId }),
+      );
+      await dataSource.manager.save(
+        SeatFactory.createBooked({
+          performanceId: command.performanceId,
+          id: command.seatId,
+        }),
+      );
+      await dataSource.manager.save(
+        ReservationFactory.createConfirm({
+          userId: command.userId,
+          seatId: command.seatId,
+        }),
+      );
 
       // When & Then
       await expect(performanceFacade.reserveSeat(command)).rejects.toThrow(
