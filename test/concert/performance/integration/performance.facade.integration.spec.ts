@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getDataSourceToken, TypeOrmModule } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
+import { DataSource, EntityManager } from 'typeorm';
 
 import { ScheduleModule } from '@nestjs/schedule';
 import { ConflictStatusException, typeOrmDataSourceOptions } from 'src/common';
@@ -21,17 +21,19 @@ import {
 import { QueueModule } from 'src/domain/queue';
 import { UserEntity, UserModule } from 'src/domain/user';
 import { CustomLoggerModule } from 'src/global';
-import { ConcertFactory } from 'test/fixture/concert-factory';
-import { PerformanceFactory } from 'test/fixture/performance-factory';
-import { SeatFactory } from 'test/fixture/seat-factory';
-import { UserFactory } from 'test/fixture/user-factory';
-import { ReservationFactory } from 'test/fixture/reservation-factory';
+import {
+  ConcertFactory,
+  PerformanceFactory,
+  ReservationFactory,
+  SeatFactory,
+  UserFactory,
+} from 'test/fixture';
 
 describe('PerformanceFacade 통합테스트', () => {
-  let performanceFacade: PerformanceFacade;
-  // let performanceService: PerformanceService;
-  // let userService: UserService;
   let dataSource: DataSource;
+  let manager: EntityManager;
+
+  let performanceFacade: PerformanceFacade;
 
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -39,7 +41,6 @@ describe('PerformanceFacade 통합테스트', () => {
         TypeOrmModule.forRoot({
           ...typeOrmDataSourceOptions,
           synchronize: true,
-          dropSchema: true,
           logging: false,
         }),
         ScheduleModule.forRoot(),
@@ -62,17 +63,16 @@ describe('PerformanceFacade 통합테스트', () => {
     }).compile();
 
     performanceFacade = module.get<PerformanceFacade>(PerformanceFacade);
-
-    // DataSource 객체 가져오기
     dataSource = module.get<DataSource>(getDataSourceToken());
+    manager = dataSource.manager;
   });
 
   beforeEach(async () => {
-    await dataSource.manager.clear(PerformanceEntity);
-    await dataSource.manager.clear(ConcertEntity);
-    await dataSource.manager.clear(ReservationEntity);
-    await dataSource.manager.clear(SeatEntity);
-    await dataSource.manager.clear(UserEntity);
+    await manager.clear(PerformanceEntity);
+    await manager.clear(ConcertEntity);
+    await manager.clear(ReservationEntity);
+    await manager.clear(SeatEntity);
+    await manager.clear(UserEntity);
   });
 
   afterAll(async () => {
@@ -82,33 +82,31 @@ describe('PerformanceFacade 통합테스트', () => {
   describe('getPerformances', () => {
     it('콘서트 Id에 해당하는 공연 리스트를 조회한다.', async () => {
       // Given
-      await dataSource.manager.save(ConcertFactory.create({ id: 1 }));
-      await dataSource.manager.save(
-        PerformanceFactory.create({ concertId: 1 }),
-      );
-      const concertId = 1;
+      const concert = ConcertFactory.create({ id: 1 });
+      const performance = PerformanceFactory.create({ concertId: concert.id });
+      await manager.save(concert);
+      await manager.save(performance);
 
       // When
-      const performances = await performanceFacade.getPerformances(concertId);
+      const performances = await performanceFacade.getPerformances(concert.id);
 
       // Then
       expect(performances).toBeDefined();
       expect(performances.length).toBeGreaterThan(0);
-      expect(performances[0].concertId).toBe(concertId);
+      expect(performances[0].concertId).toBe(concert.id);
     });
   });
 
   describe('getAvailableSeats', () => {
     it('공연 Id에 해당하는 예약가능한 좌석 리스트를 조회한다.', async () => {
       // Given
-      await dataSource.manager.save(PerformanceFactory.create({ id: 1 }));
-      await dataSource.manager.save(
-        SeatFactory.create({ performanceId: 1, id: 12 }),
-      );
-      const performanceId = 1;
+      const performance = PerformanceFactory.create({ concertId: 1 });
+      const seat = SeatFactory.create({ performanceId: performance.id });
+      await manager.save(performance);
+      await manager.save(seat);
 
       // When
-      const seats = await performanceFacade.getAvailableSeats(performanceId);
+      const seats = await performanceFacade.getAvailableSeats(performance.id);
 
       // Then
       expect(seats).toBeDefined();
@@ -120,20 +118,19 @@ describe('PerformanceFacade 통합테스트', () => {
   describe('reserveSeat', () => {
     it('선택한 좌석을 예약한다.', async () => {
       // Given
-      await dataSource.manager.save(UserFactory.create({ id: 11 }));
-      await dataSource.manager.save(PerformanceFactory.create({ id: 1 }));
-      await dataSource.manager.save(
-        SeatFactory.create({ performanceId: 1, id: 12 }),
-      );
-      const userId = 11;
-      const performanceId = 1;
-      const seatId = 12;
+      const user = UserFactory.create({ id: 11 });
+      const performance = PerformanceFactory.create({ id: 1 });
+      const seat = SeatFactory.create({ performanceId: performance.id });
+
+      await manager.save(user);
+      await manager.save(performance);
+      await manager.save(seat);
 
       const command = new WriteReservationCommand({
-        userId,
+        userId: user.id,
         queueUid: '',
-        performanceId,
-        seatId,
+        performanceId: performance.id,
+        seatId: seat.id,
       });
 
       // When
@@ -146,19 +143,18 @@ describe('PerformanceFacade 통합테스트', () => {
 
     it('좌석이 예약된 경우 충돌 예외가 발생한다.', async () => {
       // Given
-      await dataSource.manager.save(UserFactory.create({ id: 1 }));
-      await dataSource.manager.save(PerformanceFactory.create({ id: 1 }));
-      await dataSource.manager.save(SeatFactory.createBooked({ id: 1 }));
-
-      const userId = 1;
-      const performanceId = 1;
-      const seatId = 1;
+      const user = UserFactory.create({ id: 11 });
+      const performance = PerformanceFactory.create({ id: 1 });
+      const seat = SeatFactory.createBooked({ performanceId: performance.id });
+      await manager.save(user);
+      await manager.save(performance);
+      await manager.save(seat);
 
       const command = new WriteReservationCommand({
-        userId,
+        userId: user.id,
         queueUid: '',
-        performanceId,
-        seatId,
+        performanceId: performance.id,
+        seatId: seat.id,
       });
 
       // When & Then
@@ -169,29 +165,24 @@ describe('PerformanceFacade 통합테스트', () => {
 
     it('좌석을 중복 예약하는 경우 충돌 예외가 발생한다.', async () => {
       // Given
-      const command = new WriteReservationCommand({
-        userId: 1,
-        queueUid: '',
-        performanceId: 11,
-        seatId: 1,
+      const user = UserFactory.create({ id: 11 });
+      const performance = PerformanceFactory.create({ id: 1 });
+      const seat = SeatFactory.createBooked({ performanceId: performance.id });
+      const reservation = ReservationFactory.createConfirm({
+        userId: user.id,
+        seatId: seat.id,
       });
+      await manager.save(user);
+      await manager.save(performance);
+      await manager.save(seat);
+      await manager.save(reservation);
 
-      await dataSource.manager.save(UserFactory.create({ id: command.userId }));
-      await dataSource.manager.save(
-        PerformanceFactory.create({ id: command.performanceId }),
-      );
-      await dataSource.manager.save(
-        SeatFactory.createBooked({
-          performanceId: command.performanceId,
-          id: command.seatId,
-        }),
-      );
-      await dataSource.manager.save(
-        ReservationFactory.createConfirm({
-          userId: command.userId,
-          seatId: command.seatId,
-        }),
-      );
+      const command = new WriteReservationCommand({
+        userId: user.id,
+        queueUid: '',
+        performanceId: performance.id,
+        seatId: seat.id,
+      });
 
       // When & Then
       await expect(performanceFacade.reserveSeat(command)).rejects.toThrow(
