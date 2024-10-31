@@ -7,6 +7,7 @@ export type UpdatePointParam = {
   type: PointHistoryType;
   amount: number;
   userId: number;
+  currentVersion: number;
 };
 export type FindLockOptions = Pick<FindOneOptions, 'lock'>;
 

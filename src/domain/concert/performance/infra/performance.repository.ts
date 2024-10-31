@@ -20,5 +20,9 @@ export abstract class PerformanceRepository extends BaseRepository<PerformanceEn
     options?: FindLockOptions,
   ): Promise<SeatEntity>;
 
-  abstract updateSeatStatus(seatId: number, status: SeatStatus): Promise<void>;
+  abstract updateSeatStatus(
+    seatId: number,
+    status: SeatStatus,
+    currentVersion: number,
+  ): Promise<void>;
 }

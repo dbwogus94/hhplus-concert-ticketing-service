@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
 
-import { ResourceNotFoundException } from 'src/common';
+import { ConflictStatusException, ResourceNotFoundException } from 'src/common';
 import { PerformanceEntity, SeatEntity, SeatStatus } from '../domain';
 import {
   FindLockOptions,
@@ -66,7 +66,26 @@ export class PerformanceCoreRepository extends PerformanceRepository {
   override async updateSeatStatus(
     seatId: number,
     status: SeatStatus,
+    currentVersion: number,
   ): Promise<void> {
-    await this.seatRepo.save({ id: seatId, status });
+    const updateVersion = currentVersion + 1;
+
+    const result = await this.seatRepo.update(
+      {
+        id: seatId,
+        version: currentVersion, // 버전 체크 조건
+      },
+      {
+        status,
+        version: updateVersion, // 버전 증가
+      },
+    );
+
+    // 개선 예정
+    if (result.affected === 0) {
+      throw new ConflictStatusException(
+        '좌석 예약에 실패했습니다. 다시 시도해주세요.',
+      );
+    }
   }
 }

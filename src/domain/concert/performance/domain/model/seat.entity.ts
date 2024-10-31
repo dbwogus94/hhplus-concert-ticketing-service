@@ -1,4 +1,4 @@
-import { Column, Entity, JoinColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, VersionColumn } from 'typeorm';
 
 import { BaseEntity, ConflictStatusException } from 'src/common';
 import { SeatStatus } from './enum';
@@ -22,6 +22,9 @@ export class SeatEntity extends BaseEntity {
     foreignKeyConstraintName: 'fk_seat_performanceId',
   })
   performanceId: number;
+
+  @VersionColumn()
+  version: number;
 
   /* ================================ Domain Method ================================ */
   /**

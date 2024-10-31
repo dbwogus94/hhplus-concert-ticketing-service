@@ -53,6 +53,7 @@ export class Init1729215044973 implements MigrationInterface {
             \`updatedAt\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '수정일',
             \`deletedAt\` datetime(6) DEFAULT NULL COMMENT '삭제일',
             \`amount\` int NOT NULL,
+            \`version\` int(11) NOT NULL,
             PRIMARY KEY (\`id\`)
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
         `);
@@ -115,6 +116,7 @@ export class Init1729215044973 implements MigrationInterface {
             \`amount\` int NOT NULL,
             \`status\` varchar(255) NOT NULL,
             \`performanceId\` int NOT NULL,
+            \`version\` int(11) NOT NULL,
             PRIMARY KEY (\`id\`)
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
         `);
