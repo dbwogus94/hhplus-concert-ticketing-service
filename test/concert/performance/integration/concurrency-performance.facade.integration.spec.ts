@@ -37,6 +37,7 @@ describe('PerformanceFacade 동시성 통합테스트', () => {
       imports: [
         TypeOrmModule.forRoot({
           ...typeOrmDataSourceOptions,
+          synchronize: true,
           logging: false,
         }),
         ScheduleModule.forRoot(),
