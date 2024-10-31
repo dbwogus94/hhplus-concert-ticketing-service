@@ -43,3 +43,6 @@ lerna-debug.log*
 **/sqlite
 /sqlite
 *.db
+
+
+**/docker-volumes

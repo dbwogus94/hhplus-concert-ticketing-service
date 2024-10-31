@@ -1,38 +1,50 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getDataSourceToken, TypeOrmModule } from '@nestjs/typeorm';
-import { execSync } from 'child_process';
-import { DataSource } from 'typeorm';
+import { DataSource, EntityManager } from 'typeorm';
 
 import { ScheduleModule } from '@nestjs/schedule';
 import { ConflictStatusException, typeOrmDataSourceOptions } from 'src/common';
 import {
+  ConcertEntity,
+  PerformanceEntity,
   PerformanceModule,
   PerformanceService,
+  ReservationEntity,
+  SeatEntity,
   SeatStatus,
 } from 'src/domain/concert/performance';
 import {
   PaymentFacade,
   WritePaymentCriteria,
 } from 'src/domain/payment/application';
-import { PaymentService } from 'src/domain/payment/doamin';
+import { PaymentEntity, PaymentService } from 'src/domain/payment/doamin';
 import {
   PaymentCoreRepository,
   PaymentRepository,
 } from 'src/domain/payment/infra';
-import { UserModule, UserService } from 'src/domain/user';
+import { UserEntity, UserModule, UserService } from 'src/domain/user';
 import { CustomLoggerModule } from 'src/global';
+import {
+  PointFactory,
+  ReservationFactory,
+  SeatFactory,
+  UserFactory,
+} from 'test/fixture';
 
 describe('PaymentFacade 동시성 통합테스트', () => {
+  let dataSource: DataSource;
+  let manager: EntityManager;
   let paymentFacade: PaymentFacade;
+
   let performanceService: PerformanceService;
   let userService: UserService;
-  let dataSource: DataSource;
 
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [
         TypeOrmModule.forRoot({
           ...typeOrmDataSourceOptions,
+          synchronize: true,
           logging: false,
         }),
         ScheduleModule.forRoot(),
@@ -52,11 +64,16 @@ describe('PaymentFacade 동시성 통합테스트', () => {
     userService = module.get<UserService>(UserService);
 
     dataSource = module.get<DataSource>(getDataSourceToken());
+    manager = dataSource.manager;
   });
 
-  beforeEach(() => {
-    execSync('npm run db:drop', { stdio: 'inherit' });
-    execSync('npm run db:migrate:up', { stdio: 'inherit' });
+  beforeEach(async () => {
+    await manager.clear(PerformanceEntity);
+    await manager.clear(ConcertEntity);
+    await manager.clear(SeatEntity);
+    await manager.clear(UserEntity);
+    await manager.clear(ReservationEntity);
+    await manager.clear(PaymentEntity);
   });
 
   afterAll(async () => {
@@ -66,17 +83,30 @@ describe('PaymentFacade 동시성 통합테스트', () => {
   describe('payment', () => {
     it('여러번 결제를 시도하는 경우 한번만 성공한다.', async () => {
       // Given
-      const userId = 1;
-      const reservationId = 1;
-      const seatId = 1;
-      const criteria = WritePaymentCriteria.from({ userId, reservationId });
+      const point = PointFactory.create({ id: 1, amount: 100_000 });
+      const user = UserFactory.create({ id: 1, pointId: point.id });
+      const seat = SeatFactory.createReserved({ id: 1, amount: 50_000 });
+      const reservation = ReservationFactory.create({
+        id: 1,
+        userId: user.id,
+        seatId: seat.id,
+        price: seat.amount,
+      });
+      await dataSource.manager.save(point);
+      await dataSource.manager.save(user);
+      await dataSource.manager.save(seat);
+      await dataSource.manager.save(reservation);
+
+      const criteria = WritePaymentCriteria.from({
+        userId: user.id,
+        reservationId: reservation.id,
+      });
+      const criterias = Array.from({ length: 100 }, () => criteria);
 
       // When
-      const results = await Promise.allSettled([
-        paymentFacade.payment(criteria),
-        paymentFacade.payment(criteria),
-        paymentFacade.payment(criteria),
-      ]);
+      const results = await Promise.allSettled(
+        criterias.map((criteria) => paymentFacade.payment(criteria)),
+      );
 
       // Then
       const successCount = results.filter(
@@ -93,12 +123,12 @@ describe('PaymentFacade 동시성 통합테스트', () => {
       ).toBeInstanceOf(ConflictStatusException);
 
       // 추가 검증: 사용자 포인트가 차감되었는지 확인
-      const userPoint = await userService.getUserPoint(userId);
-      expect(userPoint.amount).toBe(900_000);
+      const userPoint = await userService.getUserPoint(criteria.userId);
+      expect(userPoint.amount).toBe(point.amount - seat.amount);
 
       // 좌석 상태가 'BOOKED'로 변경되었는지 확인
-      const seat = await performanceService.getSeat(seatId);
-      expect(seat.status).toBe(SeatStatus.BOOKED);
+      const findSeat = await performanceService.getSeat(seat.id);
+      expect(findSeat.status).toBe(SeatStatus.BOOKED);
     });
   });
 });

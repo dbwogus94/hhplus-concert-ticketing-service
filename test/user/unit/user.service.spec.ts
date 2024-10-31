@@ -26,7 +26,7 @@ describe('UserService', () => {
     mockManamer = mock<EntityManager>();
     userRepo = mock<UserRepository>();
     pointRepo = mock<PointRepository>();
-    service = new UserService(userRepo, pointRepo, mockManamer);
+    service = new UserService(mockManamer, userRepo, pointRepo);
   });
 
   describe('getUser', () => {

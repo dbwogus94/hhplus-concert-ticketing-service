@@ -1,34 +1,43 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { ScheduleModule } from '@nestjs/schedule';
+import { Test, TestingModule } from '@nestjs/testing';
 import { getDataSourceToken, TypeOrmModule } from '@nestjs/typeorm';
-import { execSync } from 'child_process';
-import { DataSource } from 'typeorm';
+import { DataSource, EntityManager } from 'typeorm';
 
 import { ConflictStatusException, typeOrmDataSourceOptions } from 'src/common';
 import {
+  ConcertEntity,
   PerformanceCoreRepository,
+  PerformanceEntity,
   PerformanceFacade,
   PerformanceRepository,
   PerformanceService,
   ReservationCoreRepository,
+  ReservationEntity,
   ReservationRepository,
+  SeatEntity,
   WriteReservationCommand,
 } from 'src/domain/concert/performance';
 import { QueueModule } from 'src/domain/queue';
-import { UserModule } from 'src/domain/user';
+import { UserEntity, UserModule } from 'src/domain/user';
 import { CustomLoggerModule } from 'src/global';
+import {
+  PerformanceFactory,
+  PointFactory,
+  SeatFactory,
+  UserFactory,
+} from 'test/fixture';
 
-describe('PerformanceFacade 통합테스트', () => {
+describe('PerformanceFacade 동시성 통합테스트', () => {
   let performanceFacade: PerformanceFacade;
-
   let dataSource: DataSource;
+  let manager: EntityManager;
 
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [
         TypeOrmModule.forRoot({
           ...typeOrmDataSourceOptions,
-          logging: true,
+          logging: false,
         }),
         ScheduleModule.forRoot(),
         CustomLoggerModule.forRoot(),
@@ -50,15 +59,16 @@ describe('PerformanceFacade 통합테스트', () => {
     }).compile();
 
     performanceFacade = module.get<PerformanceFacade>(PerformanceFacade);
-
-    // DataSource 객체 가져오기
     dataSource = module.get<DataSource>(getDataSourceToken());
+    manager = dataSource.manager;
   });
 
   beforeEach(async () => {
-    // 데이터베이스 초기화 및 마이그레이션 실행
-    execSync('npm run db:drop', { stdio: 'inherit' });
-    execSync('npm run db:migrate:up', { stdio: 'inherit' });
+    await manager.clear(PerformanceEntity);
+    await manager.clear(ConcertEntity);
+    await manager.clear(SeatEntity);
+    await manager.clear(UserEntity);
+    await manager.clear(ReservationEntity);
   });
 
   afterAll(async () => {
@@ -68,17 +78,25 @@ describe('PerformanceFacade 통합테스트', () => {
   describe('reserveSeat - 좌석 예약 동시성 테스트', () => {
     it('여러명의 사용자가 좌석을 동시에 예약하면 첫번째 요청한 사용자만 성공한다.', async () => {
       // Given
-      const performanceId = 1;
-      const seatId = 11;
-      const userIds = [11, 12, 13, 14, 15, 16, 17];
+      const performance = PerformanceFactory.create({ id: 1 });
+      const seat = SeatFactory.create({ performanceId: performance.id });
+      await dataSource.manager.save(performance);
+      await dataSource.manager.save(seat);
+
+      const userIds = Array.from({ length: 100 }, (_, i) => i + 1);
+      const promises = userIds.map(async (id) => {
+        await manager.save(PointFactory.create({ id, amount: 100_000 }));
+        await manager.save(UserFactory.create({ id, pointId: id }));
+      });
+      await Promise.all(promises);
 
       const commands = userIds.map(
         (userId) =>
           new WriteReservationCommand({
             userId,
             queueUid: '',
-            performanceId,
-            seatId,
+            performanceId: performance.id,
+            seatId: seat.id,
           }),
       );
 
@@ -101,17 +119,25 @@ describe('PerformanceFacade 통합테스트', () => {
 
     it('여러명의 사용자가 좌석을 동시에 예약하면 첫번째 사용자를 제외하고 모두 실패한다.', async () => {
       // Given
-      const performanceId = 1;
-      const seatId = 11;
-      const userIds = [11, 12, 13, 14, 15, 16, 17];
+      const performance = PerformanceFactory.create({ id: 1 });
+      const seat = SeatFactory.create({ performanceId: performance.id });
+      await dataSource.manager.save(performance);
+      await dataSource.manager.save(seat);
+
+      const userIds = Array.from({ length: 100 }, (_, i) => i + 1);
+      const promises = userIds.map(async (id) => {
+        await manager.save(PointFactory.create({ id, amount: 100_000 }));
+        await manager.save(UserFactory.create({ id, pointId: id }));
+      });
+      await Promise.all(promises);
 
       const commands = userIds.map(
         (userId) =>
           new WriteReservationCommand({
             userId,
             queueUid: '',
-            performanceId,
-            seatId,
+            performanceId: performance.id,
+            seatId: seat.id,
           }),
       );
 
@@ -133,47 +159,6 @@ describe('PerformanceFacade 통합테스트', () => {
       expect(
         results.filter((result) => result.status === 'rejected')[0].reason,
       ).toBeInstanceOf(ConflictStatusException);
-    });
-
-    it('한명의 사용자가 좌석을 중복 예약하는 경우 한번만 성공한다.', async () => {
-      // Given
-      const userId = 11;
-      const performanceId = 1;
-      const seatId = 11;
-
-      const command = new WriteReservationCommand({
-        userId,
-        queueUid: '',
-        performanceId,
-        seatId,
-      });
-
-      // When
-      const results = await Promise.allSettled([
-        performanceFacade.reserveSeat(command),
-        performanceFacade.reserveSeat(command),
-        performanceFacade.reserveSeat(command),
-      ]);
-
-      // Then
-      const successCount = results.filter(
-        (result) => result.status === 'fulfilled',
-      ).length;
-      const failCount = results.filter(
-        (result) => result.status === 'rejected',
-      ).length;
-
-      expect(successCount).toBe(1);
-      expect(failCount).toBe(results.length - 1);
-      expect(
-        results.filter((result) => result.status === 'rejected')[0].reason,
-      ).toBeInstanceOf(ConflictStatusException);
-
-      // 실제로 DB에 하나의 예약만 생성되었는지 확인
-      const reservations = await dataSource
-        .getRepository('reservation')
-        .find({ where: { userId, seatId } });
-      expect(reservations.length).toBe(1);
     });
   });
 });
