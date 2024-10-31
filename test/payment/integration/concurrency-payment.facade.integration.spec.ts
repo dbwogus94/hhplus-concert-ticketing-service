@@ -83,9 +83,9 @@ describe('PaymentFacade 동시성 통합테스트', () => {
   describe('payment', () => {
     it('여러번 결제를 시도하는 경우 한번만 성공한다.', async () => {
       // Given
-      const point = PointFactory.create({ id: 1, amount: 100_000 });
+      const point = PointFactory.create({ id: 1, amount: 100 });
       const user = UserFactory.create({ id: 1, pointId: point.id });
-      const seat = SeatFactory.createReserved({ id: 1, amount: 50_000 });
+      const seat = SeatFactory.createReserved({ id: 1, amount: 1 });
       const reservation = ReservationFactory.create({
         id: 1,
         userId: user.id,
@@ -97,11 +97,12 @@ describe('PaymentFacade 동시성 통합테스트', () => {
       await dataSource.manager.save(seat);
       await dataSource.manager.save(reservation);
 
+      const length = 100;
       const criteria = WritePaymentCriteria.from({
         userId: user.id,
         reservationId: reservation.id,
       });
-      const criterias = Array.from({ length: 100 }, () => criteria);
+      const criterias = Array.from({ length }, () => criteria);
 
       // When
       const results = await Promise.allSettled(

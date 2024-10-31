@@ -321,7 +321,7 @@ describe('PerformanceService', () => {
 
         // mock
         performanceRepo.getSeatByPk.mockResolvedValue(mockSeat);
-        reservationRepo.getReservationBy.mockResolvedValue(mockReservation);
+        reservationRepo.getReservation.mockResolvedValue(mockReservation);
         performanceRepo.updateSeatStatus.mockResolvedValue();
         reservationRepo.updateReservationStatus.mockResolvedValue();
 

@@ -5,6 +5,7 @@ import { EntityManager } from 'typeorm';
 import { ReservationEntity, ReservationStatus } from '../domain';
 import {
   FindByOptions,
+  FindOptions,
   InsertReservationParam,
   ReservationRepository,
 } from './reservation.repository';
@@ -17,6 +18,15 @@ export class ReservationCoreRepository extends ReservationRepository {
     readonly manager: EntityManager,
   ) {
     super(ReservationEntity, manager);
+  }
+
+  override async getReservation(
+    options: FindOptions,
+  ): Promise<ReservationEntity> {
+    const reservation = await this.findOne({ ...options });
+    if (!reservation)
+      throw new ResourceNotFoundException('예약이 존재하지 않습니다.');
+    return reservation;
   }
 
   override async getReservationBy(
