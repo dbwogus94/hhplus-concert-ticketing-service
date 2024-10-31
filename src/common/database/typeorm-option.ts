@@ -18,7 +18,7 @@ export const mysqlDataSourceOptions: MysqlConnectionOptions = {
   database: process.env.DATABASE_NAME,
   entities: [`${__dirname}/../../domain/**/*.entity{.ts,.js}`],
   extra: {
-    connectionLimit: 50,
+    connectionLimit: 20,
   },
 } as const;
 

@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
-import { EntityManager, Repository } from 'typeorm';
+import {
+  EntityManager,
+  OptimisticLockVersionMismatchError,
+  Repository,
+} from 'typeorm';
 
 import { PointEntity, PointHistoryEntity } from '../domain';
 import {
@@ -40,7 +44,26 @@ export class PointCoreRepository extends PointRepository {
     pointId: number,
     param: UpdatePointParam,
   ): Promise<void> {
-    await this.update(pointId, { amount: param.amount });
+    const currentVersion = param.currentVersion;
+    const updateVersion = currentVersion + 1;
+    const result = await this.update(
+      {
+        id: pointId,
+        version: currentVersion, // 버전 체크 조건
+      },
+      {
+        amount: param.amount,
+        version: updateVersion, // 버전 증가
+      },
+    );
+    if (result.affected === 0) {
+      throw new OptimisticLockVersionMismatchError(
+        'PointEntity',
+        updateVersion,
+        currentVersion,
+      );
+    }
+
     await this.pointHistoryRepo.insert({ ...param });
   }
 }

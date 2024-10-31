@@ -1,5 +1,5 @@
 import { BaseEntity, ConflictStatusException } from 'src/common';
-import { Column, Entity } from 'typeorm';
+import { Column, Entity, VersionColumn } from 'typeorm';
 
 @Entity('point')
 export class PointEntity extends BaseEntity {
@@ -7,6 +7,9 @@ export class PointEntity extends BaseEntity {
 
   @Column('int')
   amount: number;
+
+  @VersionColumn()
+  version: number;
 
   /* ================================ Domain Method ================================ */
 
