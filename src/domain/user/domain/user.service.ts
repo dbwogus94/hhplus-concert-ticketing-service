@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
-import { EntityManager, QueryFailedError } from 'typeorm';
+import { EntityManager, OptimisticLockVersionMismatchError } from 'typeorm';
 
 import { ConflictStatusException } from 'src/common';
 import { PointRepository, UserRepository } from '../infra';
@@ -37,27 +37,22 @@ export class UserService {
         const txPointRepo = this.pointRepo.createTransactionRepo(txManager);
 
         const user = await txUser.getUserByPK(userId);
-        const point = await txPointRepo.getPointByPk(user.pointId, {
-          lock: { mode: 'pessimistic_write_or_fail' },
-        });
-
+        const point = await txPointRepo.getPointByPk(user.pointId);
         point.chargePoint(chargeAmount);
 
         await txPointRepo.updatePointWithHistory(user.pointId, {
-          // TODO: type를 넘기는 건 실수하기 너무 좋음, 개선필요
           type: PointHistoryType.CHARGE,
-          amount: point.amount,
           userId,
+          amount: point.amount,
+          currentVersion: point.version,
         });
         return GetUserPointInfo.of(point);
       })
       .catch((error) => {
-        if (
-          error instanceof QueryFailedError &&
-          error.message.includes('NOWAIT')
-        )
+        if (error instanceof OptimisticLockVersionMismatchError) {
           throw new ConflictStatusException('포인트 충전 요청 처리중입니다.');
-        else throw error;
+        }
+        throw error;
       });
   }
 
@@ -73,26 +68,22 @@ export class UserService {
           const txPointRepo = this.pointRepo.createTransactionRepo(txManager);
 
           const user = await txUser.getUserByPK(userId);
-          const point = await txPointRepo.getPointByPk(user.pointId, {
-            lock: { mode: 'pessimistic_write_or_fail' },
-          });
-
+          const point = await txPointRepo.getPointByPk(user.pointId);
           point.usePoint(chargeAmount);
 
           await txPointRepo.updatePointWithHistory(user.pointId, {
             type: PointHistoryType.USE,
-            amount: point.amount,
             userId,
+            amount: point.amount,
+            currentVersion: point.version,
           });
           return GetUserPointInfo.of(point);
         })
         .catch((error) => {
-          if (
-            error instanceof QueryFailedError &&
-            error.message.includes('NOWAIT')
-          )
+          if (error instanceof OptimisticLockVersionMismatchError) {
             throw new ConflictStatusException('포인트 사용 요청 처리중입니다.');
-          else throw error;
+          }
+          throw error;
         });
     };
   }
