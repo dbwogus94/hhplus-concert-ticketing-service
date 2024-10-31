@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:6.2.6-alpine
+    container_name: redis
+    ports: # 바인딩할 포트:내부 포트
+      - 6379:6379
+    command: redis-server /usr/local/etc/redis/redis.conf
+    volumes: # 마운트할 볼륨 설정
+      - ./docker-volumes/redis:/data
+      - ./docker-volumes/redis/conf.d/redis.conf:/usr/local/etc/redis/redis.conf
+    restart: always
+
+  # service-1
+  mysql:
+    image: mysql:8.0.17
+    platform: linux/amd64
+    container_name: mysql
+    # 접근 포트 (컨테이너 외부: 컨테이너 내부)
+    ports:
+      - 13306:3306
+    environment:
+      - MYSQL_DATABASE=mysql
+      - MYSQL_USER=tester # 새로운 사용자
+      - MYSQL_PASSWORD=tester1234 # 새로운 사용자의 비밀번호
+      - MYSQL_ROOT_PASSWORD=root1234
+        # 아래 옵션 추가
+      - MYSQL_ALLOW_EMPTY_PASSWORD=no
+      - MYSQL_RANDOM_ROOT_PASSWORD=no
+    volumes:
+      # 설정 디렉토리 전체를 사용
+      # - ./docker-volumes/mysql/conf.d/my.cnf:/etc/mysql/conf.d/my.cnf
+      # 초기화 SQL 스크립트 위치
+      # - ./docker-volumes/mysql/init:/docker-entrypoint-initdb.d
+      # 컨테이너의 데이터 로컬로 마운트
+      - ./docker-volumes/mysql/data:/var/lib/mysql
+    networks:
+      - k6_load_test
+    restart: always
+
+  # influxdb:
+  #   image: influxdb:1.8-alpine
+  #   platform: linux/amd64
+  #   container_name: influxdb
+  #   ports:
+  #     - '8086:8086'
+  #   environment:
+  #     - INFLUXDB_DB=k6
+  #     - INFLUXDB_HTTP_BIND_ADDRESS=:8086
+  #   volumes:
+  #     - ./docker-volumes/influxdb:/var/lib/influxdb
+  #   networks:
+  #     - k6_load_test
+
+  # grafana:
+  #   image: grafana/grafana
+  #   platform: linux/amd64
+  #   container_name: grafana
+  #   depends_on:
+  #     - influxdb
+  #   ports:
+  #     - '4000:4000'
+  #   environment:
+  #     - GF_SECURITY_ADMIN_PASSWORD=admin # 기본 로그인 정보 설정
+  #     - GF_SECURITY_ADMIN_USER=admin
+  #   volumes:
+  #     - ./docker-volumes/grafana:/var/lib/grafana
+  #   networks:
+  #     - k6_load_test
+
+networks:
+  k6_load_test:
+    driver: bridge

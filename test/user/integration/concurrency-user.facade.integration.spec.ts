@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getDataSourceToken, TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource, EntityManager } from 'typeorm';
 
-import { ConflictStatusException, typeOrmDataSourceOptions } from 'src/common';
+import { typeOrmDataSourceOptions } from 'src/common';
 
 import {
   PointCoreRepository,
@@ -17,11 +17,13 @@ import {
   WriteUserPointCommand,
 } from 'src/domain/user';
 import { PointFactory, UserFactory } from 'test/fixture';
+import { DistributedLockModule, DistributedLockProvider } from 'src/global';
 
 describe('UserFacade 동시성 통합 테스트', () => {
   let userFacade: UserFacade;
   let dataSource: DataSource;
   let manager: EntityManager;
+  let lockProvider: DistributedLockProvider;
 
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -31,6 +33,7 @@ describe('UserFacade 동시성 통합 테스트', () => {
           synchronize: true,
           logging: false,
         }),
+        DistributedLockModule.forRoot(),
       ],
       providers: [
         UserFacade,
@@ -49,6 +52,7 @@ describe('UserFacade 동시성 통합 테스트', () => {
     userFacade = module.get<UserFacade>(UserFacade);
     dataSource = module.get<DataSource>(getDataSourceToken());
     manager = dataSource.manager;
+    lockProvider = module.get<DistributedLockProvider>(DistributedLockProvider);
   });
 
   beforeEach(async () => {
@@ -59,6 +63,7 @@ describe('UserFacade 동시성 통합 테스트', () => {
 
   afterAll(async () => {
     await dataSource.destroy();
+    await lockProvider.disconnect();
   });
 
   describe('chargeUserPoint 동시성 통합 테스트', () => {
@@ -75,8 +80,9 @@ describe('UserFacade 동시성 통합 테스트', () => {
       });
 
       // When
+      const length = 10;
       const results = await Promise.allSettled(
-        Array.from({ length: 10 }, () => userFacade.chargeUserPoint(command)),
+        Array.from({ length }, () => userFacade.chargeUserPoint(command)),
       );
 
       // Then
@@ -87,15 +93,11 @@ describe('UserFacade 동시성 통합 테스트', () => {
         (result) => result.status === 'rejected',
       ).length;
 
-      expect(successCount).toBe(1);
-      expect(failCount).toBe(results.length - 1);
-      expect(
-        results.filter((result) => result.status === 'rejected')[0].reason,
-      ).toBeInstanceOf(ConflictStatusException);
+      expect(successCount).toBe(length);
+      expect(failCount).toBe(0);
 
-      // 추가 검증: 사용자 포인트가 차감되었는지 확인
       const userPoint = await userFacade.getUserPoint(user.id);
-      expect(userPoint.amount).toBe(point.amount + command.amount);
+      expect(userPoint.amount).toBe(command.amount * length + point.amount);
     });
   });
 });

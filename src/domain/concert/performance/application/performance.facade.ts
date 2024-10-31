@@ -10,6 +10,7 @@ import {
 } from '../domain';
 import { UserService } from 'src/domain/user';
 import { QueueService } from 'src/domain/queue';
+import { DistributedLockProvider } from 'src/global/distributed-lock/distributed-lock-provider';
 
 @Injectable()
 export class PerformanceFacade {
@@ -18,6 +19,7 @@ export class PerformanceFacade {
     private readonly performanceService: PerformanceService,
     private readonly userService: UserService,
     private readonly queueService: QueueService,
+    private readonly lockProvider: DistributedLockProvider,
   ) {}
 
   async getPerformances(concertId: number): Promise<GetPerformancesInfo[]> {
@@ -35,12 +37,14 @@ export class PerformanceFacade {
   async reserveSeat(command: WriteReservationCommand) {
     await this.userService.getUser(command.userId);
 
-    return await this.manager.transaction(async (txManager) => {
-      const reservationId =
-        this.performanceService.reserveSeat(command)(txManager);
+    return await this.lockProvider.withMutex('reserveSeat', async () => {
+      return await this.manager.transaction(async (txManager) => {
+        const reservationId =
+          this.performanceService.reserveSeat(command)(txManager);
 
-      await this.queueService.expireQueue(command.queueUid)(txManager);
-      return reservationId;
+        await this.queueService.expireQueue(command.queueUid)(txManager);
+        return reservationId;
+      });
     });
   }
 }
