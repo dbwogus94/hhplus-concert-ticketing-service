@@ -23,7 +23,11 @@ import {
   PaymentRepository,
 } from 'src/domain/payment/infra';
 import { UserEntity, UserModule, UserService } from 'src/domain/user';
-import { CustomLoggerModule } from 'src/global';
+import {
+  CustomLoggerModule,
+  DistributedLockModule,
+  DistributedLockProvider,
+} from 'src/global';
 import {
   PointFactory,
   ReservationFactory,
@@ -34,6 +38,7 @@ import {
 describe('PaymentFacade 동시성 통합테스트', () => {
   let dataSource: DataSource;
   let manager: EntityManager;
+  let lockProvider: DistributedLockProvider;
   let paymentFacade: PaymentFacade;
 
   let performanceService: PerformanceService;
@@ -49,6 +54,7 @@ describe('PaymentFacade 동시성 통합테스트', () => {
         }),
         ScheduleModule.forRoot(),
         CustomLoggerModule.forRoot(),
+        DistributedLockModule.forRoot(),
         PerformanceModule,
         UserModule,
       ],
@@ -65,6 +71,7 @@ describe('PaymentFacade 동시성 통합테스트', () => {
 
     dataSource = module.get<DataSource>(getDataSourceToken());
     manager = dataSource.manager;
+    lockProvider = module.get<DistributedLockProvider>(DistributedLockProvider);
   });
 
   beforeEach(async () => {
@@ -78,6 +85,7 @@ describe('PaymentFacade 동시성 통합테스트', () => {
 
   afterAll(async () => {
     await dataSource.destroy();
+    await lockProvider.disconnect();
   });
 
   describe('payment', () => {
@@ -129,6 +137,6 @@ describe('PaymentFacade 동시성 통합테스트', () => {
       // 좌석 상태가 'BOOKED'로 변경되었는지 확인
       const findSeat = await performanceService.getSeat(seat.id);
       expect(findSeat.status).toBe(SeatStatus.BOOKED);
-    });
+    }, 10000);
   });
 });

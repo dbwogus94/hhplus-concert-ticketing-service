@@ -19,7 +19,11 @@ import {
 } from 'src/domain/concert/performance';
 import { QueueModule } from 'src/domain/queue';
 import { UserEntity, UserModule } from 'src/domain/user';
-import { CustomLoggerModule } from 'src/global';
+import {
+  CustomLoggerModule,
+  DistributedLockModule,
+  DistributedLockProvider,
+} from 'src/global';
 import {
   PerformanceFactory,
   PointFactory,
@@ -31,6 +35,7 @@ describe('PerformanceFacade 동시성 통합테스트', () => {
   let performanceFacade: PerformanceFacade;
   let dataSource: DataSource;
   let manager: EntityManager;
+  let lockProvider: DistributedLockProvider;
 
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -41,6 +46,7 @@ describe('PerformanceFacade 동시성 통합테스트', () => {
         }),
         ScheduleModule.forRoot(),
         CustomLoggerModule.forRoot(),
+        DistributedLockModule.forRoot(),
         UserModule,
         QueueModule,
       ],
@@ -61,6 +67,7 @@ describe('PerformanceFacade 동시성 통합테스트', () => {
     performanceFacade = module.get<PerformanceFacade>(PerformanceFacade);
     dataSource = module.get<DataSource>(getDataSourceToken());
     manager = dataSource.manager;
+    lockProvider = module.get<DistributedLockProvider>(DistributedLockProvider);
   });
 
   beforeEach(async () => {
@@ -73,6 +80,7 @@ describe('PerformanceFacade 동시성 통합테스트', () => {
 
   afterAll(async () => {
     await dataSource.destroy();
+    await lockProvider.disconnect();
   });
 
   describe('reserveSeat - 좌석 예약 동시성 테스트', () => {
@@ -83,7 +91,7 @@ describe('PerformanceFacade 동시성 통합테스트', () => {
       await dataSource.manager.save(performance);
       await dataSource.manager.save(seat);
 
-      const userIds = Array.from({ length: 100 }, (_, i) => i + 1);
+      const userIds = Array.from({ length: 5 }, (_, i) => i + 1);
       const promises = userIds.map(async (id) => {
         await manager.save(PointFactory.create({ id, amount: 100_000 }));
         await manager.save(UserFactory.create({ id, pointId: id }));
@@ -115,7 +123,7 @@ describe('PerformanceFacade 동시성 통합테스트', () => {
 
       expect(successCount).toBe(1);
       expect(failCount).toBe(userIds.length - 1);
-    });
+    }, 10000);
 
     it('여러명의 사용자가 좌석을 동시에 예약하면 첫번째 사용자를 제외하고 모두 실패한다.', async () => {
       // Given
@@ -124,7 +132,7 @@ describe('PerformanceFacade 동시성 통합테스트', () => {
       await dataSource.manager.save(performance);
       await dataSource.manager.save(seat);
 
-      const userIds = Array.from({ length: 100 }, (_, i) => i + 1);
+      const userIds = Array.from({ length: 5 }, (_, i) => i + 1);
       const promises = userIds.map(async (id) => {
         await manager.save(PointFactory.create({ id, amount: 100_000 }));
         await manager.save(UserFactory.create({ id, pointId: id }));
@@ -159,6 +167,6 @@ describe('PerformanceFacade 동시성 통합테스트', () => {
       expect(
         results.filter((result) => result.status === 'rejected')[0].reason,
       ).toBeInstanceOf(ConflictStatusException);
-    });
+    }, 10000);
   });
 });

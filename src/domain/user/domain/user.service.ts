@@ -31,34 +31,23 @@ export class UserService {
   ): Promise<GetUserPointInfo> {
     const { amount: chargeAmount, userId } = command;
 
-    return await this.manager
-      .transaction(async (txManager) => {
-        const txUser = this.userRepo.createTransactionRepo(txManager);
-        const txPointRepo = this.pointRepo.createTransactionRepo(txManager);
+    return await this.manager.transaction(async (txManager) => {
+      const txUser = this.userRepo.createTransactionRepo(txManager);
+      const txPointRepo = this.pointRepo.createTransactionRepo(txManager);
 
-        const user = await txUser.getUserByPK(userId);
-        const point = await txPointRepo.getPointByPk(user.pointId, {
-          lock: { mode: 'pessimistic_write_or_fail' },
-        });
+      const user = await txUser.getUserByPK(userId);
+      const point = await txPointRepo.getPointByPk(user.pointId);
 
-        point.chargePoint(chargeAmount);
+      point.chargePoint(chargeAmount);
 
-        await txPointRepo.updatePointWithHistory(user.pointId, {
-          // TODO: type를 넘기는 건 실수하기 너무 좋음, 개선필요
-          type: PointHistoryType.CHARGE,
-          amount: point.amount,
-          userId,
-        });
-        return GetUserPointInfo.of(point);
-      })
-      .catch((error) => {
-        if (
-          error instanceof QueryFailedError &&
-          error.message.includes('NOWAIT')
-        )
-          throw new ConflictStatusException('포인트 충전 요청 처리중입니다.');
-        else throw error;
+      await txPointRepo.updatePointWithHistory(user.pointId, {
+        // TODO: type를 넘기는 건 실수하기 너무 좋음, 개선필요
+        type: PointHistoryType.CHARGE,
+        amount: point.amount,
+        userId,
       });
+      return GetUserPointInfo.of(point);
+    });
   }
 
   useUserPoint(
@@ -67,33 +56,22 @@ export class UserService {
     const { amount: chargeAmount, userId } = command;
 
     return async (manager: EntityManager = this.manager) => {
-      return await manager
-        .transaction(async (txManager) => {
-          const txUser = this.userRepo.createTransactionRepo(txManager);
-          const txPointRepo = this.pointRepo.createTransactionRepo(txManager);
+      return await manager.transaction(async (txManager) => {
+        const txUser = this.userRepo.createTransactionRepo(txManager);
+        const txPointRepo = this.pointRepo.createTransactionRepo(txManager);
 
-          const user = await txUser.getUserByPK(userId);
-          const point = await txPointRepo.getPointByPk(user.pointId, {
-            lock: { mode: 'pessimistic_write_or_fail' },
-          });
+        const user = await txUser.getUserByPK(userId);
+        const point = await txPointRepo.getPointByPk(user.pointId);
 
-          point.usePoint(chargeAmount);
+        point.usePoint(chargeAmount);
 
-          await txPointRepo.updatePointWithHistory(user.pointId, {
-            type: PointHistoryType.USE,
-            amount: point.amount,
-            userId,
-          });
-          return GetUserPointInfo.of(point);
-        })
-        .catch((error) => {
-          if (
-            error instanceof QueryFailedError &&
-            error.message.includes('NOWAIT')
-          )
-            throw new ConflictStatusException('포인트 사용 요청 처리중입니다.');
-          else throw error;
+        await txPointRepo.updatePointWithHistory(user.pointId, {
+          type: PointHistoryType.USE,
+          amount: point.amount,
+          userId,
         });
+        return GetUserPointInfo.of(point);
+      });
     };
   }
 }

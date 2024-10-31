@@ -36,7 +36,7 @@ export class QueueService {
       uid: queueUid,
       status: QueueStatus.ACTIVE,
     });
-    if (queue.isFirstAccessAfterActive) {
+    if (queue?.isFirstAccessAfterActive) {
       queue.calculateActiveExpire(new Date());
       await this.queueRepo.updateQueue(queue.uid, queue);
     }
