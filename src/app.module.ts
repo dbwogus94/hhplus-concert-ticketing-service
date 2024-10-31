@@ -11,7 +11,7 @@ import {
   getTypeOrmModuleAsyncOptions,
 } from './common';
 import { DomainModule } from './domain';
-import { CustomLoggerModule } from './global';
+import { CustomLoggerModule, DistributedLockModule } from './global';
 
 @Module({
   imports: [
@@ -20,6 +20,7 @@ import { CustomLoggerModule } from './global';
     }),
     ScheduleModule.forRoot(),
     CustomLoggerModule.forRoot(),
+    DistributedLockModule.forRoot(),
     DomainModule,
   ],
   controllers: [AppController],

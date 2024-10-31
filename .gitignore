@@ -45,4 +45,8 @@ lerna-debug.log*
 *.db
 
 
+<<<<<<< Updated upstream
+=======
+## docker 
+>>>>>>> Stashed changes
 **/docker-volumes
