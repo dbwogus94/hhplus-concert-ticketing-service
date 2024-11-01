@@ -73,9 +73,9 @@ export class PerformanceService {
         ? this.reservationRepo.createTransactionRepo(manager)
         : this.reservationRepo;
 
-      const reservation = await txReservationRepo.getReservationBy({
-        id: reservationId,
-        userId,
+      const reservation = await txReservationRepo.getReservation({
+        where: { id: reservationId, userId },
+        lock: { mode: 'pessimistic_write' },
       });
       if (!reservation.isRequest)
         throw new ConflictStatusException('"예약신청" 상태가 아닙니다.');

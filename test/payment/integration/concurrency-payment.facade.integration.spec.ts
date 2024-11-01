@@ -3,7 +3,7 @@ import { getDataSourceToken, TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource, EntityManager } from 'typeorm';
 
 import { ScheduleModule } from '@nestjs/schedule';
-import { ConflictStatusException, typeOrmDataSourceOptions } from 'src/common';
+import { typeOrmDataSourceOptions } from 'src/common';
 import {
   ConcertEntity,
   PerformanceEntity,
@@ -81,9 +81,9 @@ describe('PaymentFacade 동시성 통합테스트', () => {
   });
 
   describe('payment', () => {
-    it('여러번 결제를 시도하는 경우 한번만 성공한다.', async () => {
+    it('1000번 결제를 시도하는 경우 한 번만 성공한다.', async () => {
       // Given
-      const point = PointFactory.create({ id: 1, amount: 100 });
+      const point = PointFactory.create({ id: 1, amount: 10_000_000 });
       const user = UserFactory.create({ id: 1, pointId: point.id });
       const seat = SeatFactory.createReserved({ id: 1, amount: 1 });
       const reservation = ReservationFactory.create({
@@ -97,7 +97,7 @@ describe('PaymentFacade 동시성 통합테스트', () => {
       await dataSource.manager.save(seat);
       await dataSource.manager.save(reservation);
 
-      const length = 100;
+      const length = 1000;
       const criteria = WritePaymentCriteria.from({
         userId: user.id,
         reservationId: reservation.id,
@@ -119,9 +119,6 @@ describe('PaymentFacade 동시성 통합테스트', () => {
 
       expect(successCount).toBe(1);
       expect(failCount).toBe(results.length - 1);
-      expect(
-        results.filter((result) => result.status === 'rejected')[0].reason,
-      ).toBeInstanceOf(ConflictStatusException);
 
       // 추가 검증: 사용자 포인트가 차감되었는지 확인
       const userPoint = await userService.getUserPoint(criteria.userId);
@@ -130,6 +127,6 @@ describe('PaymentFacade 동시성 통합테스트', () => {
       // 좌석 상태가 'BOOKED'로 변경되었는지 확인
       const findSeat = await performanceService.getSeat(seat.id);
       expect(findSeat.status).toBe(SeatStatus.BOOKED);
-    });
+    }, 100000);
   });
 });

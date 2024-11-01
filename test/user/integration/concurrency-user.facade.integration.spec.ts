@@ -62,7 +62,7 @@ describe('UserFacade 동시성 통합 테스트', () => {
   });
 
   describe('chargeUserPoint 동시성 통합 테스트', () => {
-    it('사용자는 여러번의 포인트 충전을 요청하면 모두 성공한다. ', async () => {
+    it('사용자는 1000번의 포인트 충전을 요청하면 모두 성공한다. ', async () => {
       // Given
       const point = PointFactory.create({ id: 1, amount: 1_000_000 });
       const user = UserFactory.create({ id: 1, pointId: point.id });
@@ -73,7 +73,7 @@ describe('UserFacade 동시성 통합 테스트', () => {
         userId: user.id,
         amount: 500,
       });
-      const length = 100;
+      const length = 1000;
 
       // When
       const results = await Promise.allSettled(
@@ -90,13 +90,13 @@ describe('UserFacade 동시성 통합 테스트', () => {
 
       expect(successCount).toBe(length);
       expect(failCount).toBe(0);
-      expect(
-        results.filter((result) => result.status === 'rejected')[0].reason,
-      ).toBeInstanceOf(ConflictStatusException);
+      // expect(
+      //   results.filter((result) => result.status === 'rejected')[0].reason,
+      // ).toBeInstanceOf(ConflictStatusException);
 
       // 추가 검증: 사용자 포인트가 차감되었는지 확인
       const userPoint = await userFacade.getUserPoint(user.id);
-      expect(userPoint.amount).toBe(point.amount + command.amount);
-    });
+      expect(userPoint.amount).toBe(point.amount + command.amount * 1000);
+    }, 100000);
   });
 });
