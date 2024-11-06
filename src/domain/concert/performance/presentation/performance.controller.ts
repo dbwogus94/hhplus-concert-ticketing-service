@@ -11,18 +11,18 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 
 import { GetUserInfoDecorator } from 'src/common';
+import { JwtGuard } from 'src/domain/auth';
+import { PerformanceFacade } from '../application';
+import { WriteReservationCommand } from '../domain';
 import { DocumentHelper } from './document';
 import {
   GetPerformancesQuery,
-  PostSeatReservationResponse,
-  GetPerformancesWithTotolCountResponse,
-  GetSeatsWithTotolCountResponse,
   GetPerformancesResponse,
+  GetPerformancesWithTotolCountResponse,
   GetSeatsResponse,
+  GetSeatsWithTotolCountResponse,
+  PostSeatReservationResponse,
 } from './dto';
-import { PerformanceFacade } from '../application';
-import { WriteReservationCommand } from '../domain';
-import { JwtGuard } from 'src/domain/auth';
 
 @ApiTags('공연 API')
 @Controller('/performances')
