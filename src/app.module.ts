@@ -3,6 +3,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { CacheModule } from '@nestjs/cache-manager';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import {
@@ -11,15 +12,20 @@ import {
   getTypeOrmModuleAsyncOptions,
 } from './common';
 import { DomainModule } from './domain';
-import { CustomLoggerModule } from './global';
+import { AopModule, CustomLoggerModule } from './global';
 
 @Module({
   imports: [
     TypeOrmModule.forRootAsync({
       ...getTypeOrmModuleAsyncOptions(),
     }),
+    CacheModule.register({
+      isGlobal: true,
+    }),
     ScheduleModule.forRoot(),
+
     CustomLoggerModule.forRoot(),
+    AopModule.forRoot(),
     DomainModule,
   ],
   controllers: [AppController],
