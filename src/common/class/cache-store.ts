@@ -1,8 +1,18 @@
 import { CacheStore } from '@nestjs/cache-manager';
 import { Redis } from 'ioredis';
 
-export class RedisCacheStore implements CacheStore {
-  constructor(private readonly redisClient: Redis) {}
+export type RedisType = Pick<Redis, 'get' | 'set' | 'setex' | 'del'>;
+
+export abstract class BaseCacheStore implements CacheStore {
+  abstract get<T>(key: string): Promise<T | undefined> | T | undefined;
+  abstract set<T>(key: string, value: T, ttl?: number): Promise<void> | void;
+  abstract del?(key: string): void | Promise<void>;
+}
+
+export class RedisCacheStore extends BaseCacheStore {
+  constructor(private readonly redisClient: RedisType) {
+    super();
+  }
 
   async get<T>(key: string): Promise<T | null> {
     const value = await this.redisClient.get(key);
