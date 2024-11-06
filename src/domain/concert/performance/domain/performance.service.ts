@@ -10,6 +10,7 @@ import {
   WriteReservationCommand,
 } from './dto';
 import { SeatStatus } from './model';
+import { Cache } from 'src/global';
 
 @Injectable()
 export class PerformanceService {
@@ -19,12 +20,14 @@ export class PerformanceService {
     @InjectEntityManager() private readonly manager: EntityManager,
   ) {}
 
+  @Cache({ ttl: 5 })
   async getPerformances(concertId: number): Promise<GetPerformancesInfo[]> {
     const performances =
       await this.performanceRepo.getPerformancesBy(concertId);
     return GetPerformancesInfo.of(performances);
   }
 
+  @Cache({ ttl: 5 })
   async getAvailableSeats(performanceId: number): Promise<GetSeatsInfo[]> {
     const seats = await this.performanceRepo.getSeatsBy(
       performanceId,
