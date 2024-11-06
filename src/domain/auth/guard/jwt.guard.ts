@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 
 import { UserInfo, UserRequest } from 'src/common';
-// import { QueueService } from 'src/domain/queue';
 import { QueueService } from '../../queue/domain/queue.service';
 import { AuthService } from '../auth.service';
 import { BaseJwtGuard } from './base-jwt.guard';
@@ -28,8 +27,6 @@ export class JwtGuard extends BaseJwtGuard {
     // 큐 만료 체크
     const queueInfo = await this.queueService.findActiveQueue(payload.queueUid);
     if (!queueInfo) throw new UnauthorizedException();
-    if (queueInfo.activeFirstAccessAt < new Date())
-      throw new UnauthorizedException();
 
     const userInfo: UserInfo = {
       userId: payload.userId,
