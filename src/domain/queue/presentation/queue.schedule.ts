@@ -51,25 +51,4 @@ export class QueueSchedule implements OnApplicationBootstrap {
 
     job.start();
   }
-
-  @Cron(CronExpression.EVERY_10_SECONDS, {
-    name: QueueSchedule.JOB.CHANGE_QUEUE_EXPIRE_STATUS,
-  })
-  async changeQueueExpireStatus() {
-    this.logger.warn(`[${QueueSchedule.JOB.CHANGE_QUEUE_EXPIRE_STATUS}] start`);
-
-    const job = this.schedulerRegistry.getCronJob(
-      QueueSchedule.JOB.CHANGE_QUEUE_EXPIRE_STATUS,
-    );
-    job.stop();
-
-    try {
-      await this.queueFacade.changeQueueExpireStatus();
-    } catch (error) {
-      this.logger.error(error as Error);
-    }
-    this.logger.warn(`[${QueueSchedule.JOB.CHANGE_QUEUE_EXPIRE_STATUS}] end`);
-
-    job.start();
-  }
 }

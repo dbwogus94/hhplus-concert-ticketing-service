@@ -35,12 +35,9 @@ export class PerformanceFacade {
   async reserveSeat(command: WriteReservationCommand) {
     await this.userService.getUser(command.userId);
 
-    return await this.manager.transaction(async (txManager) => {
-      const reservationId =
-        this.performanceService.reserveSeat(command)(txManager);
-
-      await this.queueService.expireQueue(command.queueUid)(txManager);
-      return reservationId;
-    });
+    const reservationId = await this.performanceService.reserveSeat(command)();
+    // Note: 활성 토큰 만료에 실패한다고 롤백 시키지 않는다.
+    await this.queueService.expireActiveQueue(command.queueUid);
+    return reservationId;
   }
 }
