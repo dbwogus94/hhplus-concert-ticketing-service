@@ -1,77 +1,56 @@
 import { Injectable } from '@nestjs/common';
-import { EntityManager } from 'typeorm';
 
-import { QueueRepository } from '../infra';
-import { QueueEntity, QueueStatus } from './model';
+import { QueueRedisClient } from '../infra';
 import {
   CreateQueueInfo,
   FindActiveQueueInfo,
   GetQueueInfo,
   WriteQueueCommand,
 } from './dto';
+import { QueueDomain, QueueEntity, QueueStatus } from './model';
+
+// set hash & zadd
 
 @Injectable()
 export class QueueService {
-  constructor(private readonly queueRepo: QueueRepository) {}
+  constructor(private readonly redisClient: QueueRedisClient) {}
 
   async createQueue(command: WriteQueueCommand): Promise<CreateQueueInfo> {
     const { concertId, userId } = command;
-    const query = await this.queueRepo.saveQueue({
-      concertId,
-      userId,
+    const param = {
       uid: QueueEntity.generateUUIDv4(),
+      userId,
+      concertId,
       status: QueueStatus.WAIT,
-    });
-    return CreateQueueInfo.of(query);
+      timestamp: Date.now(),
+    };
+
+    await this.redisClient.setWaitQueue(param);
+    return CreateQueueInfo.of(QueueDomain.from(param));
   }
 
+  // getWaitQueue
   async getQueue(queueUid: string): Promise<GetQueueInfo> {
-    const queue = await this.queueRepo.getQueueByUid(queueUid);
-    const waitingNumber = await this.queueRepo.getWaitingNumber(queue);
-    return GetQueueInfo.of({ ...queue, waitingNumber });
+    const queue = await this.redisClient.getWaitQueue(queueUid);
+    const waitingNumber = await this.redisClient.getWaitingNumber(queue);
+    return GetQueueInfo.of({ queue, waitingNumber });
   }
 
+  // 후순위
   async findActiveQueue(queueUid: string): Promise<FindActiveQueueInfo | null> {
-    const queue = await this.queueRepo.findOneBy({
-      uid: queueUid,
-      status: QueueStatus.ACTIVE,
-    });
+    const queue = await this.redisClient.findActiveQueue(queueUid);
     if (queue.isFirstAccessAfterActive) {
-      queue.calculateActiveExpire(new Date());
-      await this.queueRepo.updateQueue(queue.uid, queue);
+      queue.firstAccess(new Date());
+      await this.redisClient.setExActiveQueue(queue.uid, queue);
     }
-
     return queue ? FindActiveQueueInfo.of(queue) : null;
   }
 
   async batchQueueActiveStatus(activeCount: number): Promise<void> {
-    const waitingQueues = await this.queueRepo.getQueues({
-      where: { status: QueueStatus.WAIT },
-      order: { id: 'ASC' },
-      take: activeCount,
-    });
-    if (waitingQueues.length === 0) return;
-
-    const queueUids = waitingQueues.map((q) => q.uid);
-    await this.queueRepo.updateQueues(queueUids, {
-      status: QueueStatus.ACTIVE,
-      activedAt: new Date(),
-    });
+    await this.redisClient.setActiveQueues({ start: 0, stop: activeCount });
   }
 
-  async changeAllExpireStatus(date: Date = new Date()): Promise<void> {
-    await this.queueRepo.updateAllExpireQueues(date);
-  }
-
-  expireQueue(queueUid: string): (manager?: EntityManager) => Promise<void> {
-    return async (manager: EntityManager = null) => {
-      const queueRepo = manager
-        ? this.queueRepo.createTransactionRepo(manager)
-        : this.queueRepo;
-
-      await queueRepo.updateQueue(queueUid, {
-        status: QueueStatus.EXPIRE,
-      });
-    };
+  async expireActiveQueue(queueUid: string) {
+    await this.redisClient.deleteActiveQueue(queueUid);
   }
 }
