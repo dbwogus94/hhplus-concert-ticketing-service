@@ -1,4 +1,4 @@
-import { QueueEntity, QueueStatus } from '../../model';
+import { QueueDomain, QueueEntity, QueueStatus } from '../../model';
 
 export class CreateQueueInfo implements Pick<QueueEntity, 'uid' | 'status'> {
   constructor(
@@ -7,12 +7,16 @@ export class CreateQueueInfo implements Pick<QueueEntity, 'uid' | 'status'> {
     readonly dateTime: Date,
   ) {}
 
-  static of(domain: QueueEntity[]): CreateQueueInfo[];
-  static of(domain: QueueEntity): CreateQueueInfo;
+  static of(domain: QueueDomain[]): CreateQueueInfo[];
+  static of(domain: QueueDomain): CreateQueueInfo;
   static of(
-    domain: QueueEntity | QueueEntity[],
+    domain: QueueDomain | QueueDomain[],
   ): CreateQueueInfo | CreateQueueInfo[] {
     if (Array.isArray(domain)) return domain.map((d) => this.of(d));
-    return new CreateQueueInfo(domain.uid, domain.status, domain.createdAt);
+    return new CreateQueueInfo(
+      domain.uid,
+      domain.status,
+      new Date(domain.timestamp),
+    );
   }
 }

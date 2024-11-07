@@ -1,4 +1,4 @@
-import { QueueEntity, QueueStatus } from '../../model';
+import { QueueDomain, QueueEntity, QueueStatus } from '../../model';
 
 export class FindActiveQueueInfo
   implements
@@ -21,10 +21,10 @@ export class FindActiveQueueInfo
     readonly activeFirstAccessAt?: Date,
   ) {}
 
-  static of(domain: QueueEntity[]): FindActiveQueueInfo[];
-  static of(domain: QueueEntity): FindActiveQueueInfo;
+  static of(domain: QueueDomain[]): FindActiveQueueInfo[];
+  static of(domain: QueueDomain): FindActiveQueueInfo;
   static of(
-    domain: QueueEntity | QueueEntity[],
+    domain: QueueDomain | QueueDomain[],
   ): FindActiveQueueInfo | FindActiveQueueInfo[] {
     if (Array.isArray(domain)) return domain.map((d) => this.of(d));
     return new FindActiveQueueInfo(
@@ -32,7 +32,6 @@ export class FindActiveQueueInfo
       domain.userId,
       domain.concertId,
       domain.status,
-      domain.activeExpireAt,
       domain.activeFirstAccessAt,
     );
   }

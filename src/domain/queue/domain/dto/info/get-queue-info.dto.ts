@@ -1,9 +1,7 @@
-import { QueueEntity, QueueStatus } from '../../model';
+import { QueueDomain, QueueEntity, QueueStatus } from '../../model';
 
-type GetQueueInfoParam = Pick<
-  QueueEntity,
-  'uid' | 'userId' | 'concertId' | 'status'
-> & {
+type GetQueueInfoParam = {
+  queue: Pick<QueueDomain, 'uid' | 'userId' | 'concertId' | 'status'>;
   waitingNumber: number;
 };
 
@@ -23,10 +21,10 @@ export class GetQueueInfo implements Pick<QueueEntity, 'status'> {
   ): GetQueueInfo | GetQueueInfo[] {
     if (Array.isArray(param)) return param.map((d) => this.of(d));
     return new GetQueueInfo(
-      param.uid,
-      param.userId,
-      param.concertId,
-      param.status,
+      param.queue.uid,
+      param.queue.userId,
+      param.queue.concertId,
+      param.queue.status,
       param.waitingNumber,
     );
   }

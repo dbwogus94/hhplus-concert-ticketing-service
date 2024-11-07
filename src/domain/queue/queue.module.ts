@@ -3,7 +3,7 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth';
 import { QueueFacade } from './application';
 import { QueueService } from './domain/queue.service';
-import { QueueCoreRepository, QueueRepository } from './infra';
+import { QueueCoreRedisClient, QueueRedisClient } from './infra';
 import { QueueController, QueueSchedule } from './presentation';
 
 @Module({
@@ -13,7 +13,7 @@ import { QueueController, QueueSchedule } from './presentation';
     QueueSchedule,
     QueueFacade,
     QueueService,
-    { provide: QueueRepository, useClass: QueueCoreRepository },
+    { provide: QueueRedisClient, useClass: QueueCoreRedisClient },
   ],
   exports: [QueueService],
 })
