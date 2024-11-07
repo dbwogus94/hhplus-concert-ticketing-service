@@ -9,17 +9,26 @@ import {
   ConvertExceptionInterceptor,
   ConvertResponseInterceptor,
   getTypeOrmModuleAsyncOptions,
+  RedisCacheStore,
 } from './common';
 import { DomainModule } from './domain';
-import { CustomLoggerModule } from './global';
+import { AopModule, CustomLoggerModule } from './global';
+import { CacheModule } from '@nestjs/cache-manager';
+import Redis from 'ioredis';
 
 @Module({
   imports: [
     TypeOrmModule.forRootAsync({
       ...getTypeOrmModuleAsyncOptions(),
     }),
+    CacheModule.register({
+      store: new RedisCacheStore(new Redis()),
+      isGlobal: true,
+    }),
     ScheduleModule.forRoot(),
+
     CustomLoggerModule.forRoot(),
+    AopModule.forRoot(),
     DomainModule,
   ],
   controllers: [AppController],

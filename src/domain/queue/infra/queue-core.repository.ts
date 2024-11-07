@@ -67,7 +67,6 @@ export class QueueCoreRepository extends QueueRepository {
       .update(QueueEntity)
       .set({ ...param })
       .where('uid IN (:...uid)', { uid: queueUids })
-      .andWhere('activeExpireAt < :now')
       .execute();
   }
 
