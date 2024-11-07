@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { CacheModule } from '@nestjs/cache-manager';
+import Redis from 'ioredis';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -12,9 +14,10 @@ import {
   RedisCacheStore,
 } from './common';
 import { DomainModule } from './domain';
-import { AopModule, CustomLoggerModule } from './global';
-import { CacheModule } from '@nestjs/cache-manager';
-import Redis from 'ioredis';
+import { AopModule, CustomLoggerModule, RedisModule } from './global';
+
+const cacheRedis = new Redis({ db: 0 });
+const clientRedis = new Redis({ db: 1 });
 
 @Module({
   imports: [
@@ -22,13 +25,15 @@ import Redis from 'ioredis';
       ...getTypeOrmModuleAsyncOptions(),
     }),
     CacheModule.register({
-      store: new RedisCacheStore(new Redis()),
+      store: new RedisCacheStore(cacheRedis),
       isGlobal: true,
     }),
     ScheduleModule.forRoot(),
 
+    /* custom module */
     CustomLoggerModule.forRoot(),
     AopModule.forRoot(),
+    RedisModule.forRoot(clientRedis),
     DomainModule,
   ],
   controllers: [AppController],
