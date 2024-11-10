@@ -9,8 +9,6 @@ import {
 } from './dto';
 import { QueueDomain, QueueEntity, QueueStatus } from './model';
 
-// set hash & zadd
-
 @Injectable()
 export class QueueService {
   constructor(private readonly redisClient: QueueRedisClient) {}
@@ -29,14 +27,13 @@ export class QueueService {
     return CreateQueueInfo.of(QueueDomain.from(param));
   }
 
-  // getWaitQueue
+  // TODO: 네이밍 변경 => getWaitQueue
   async getQueue(queueUid: string): Promise<GetQueueInfo> {
-    const queue = await this.redisClient.getWaitQueue(queueUid);
+    const queue = await this.redisClient.getWaitQueueInfo(queueUid);
     const waitingNumber = await this.redisClient.getWaitingNumber(queue);
     return GetQueueInfo.of({ queue, waitingNumber });
   }
 
-  // 후순위
   async findActiveQueue(queueUid: string): Promise<FindActiveQueueInfo | null> {
     const queue = await this.redisClient.findActiveQueue(queueUid);
     if (queue.isFirstAccessAfterActive) {
