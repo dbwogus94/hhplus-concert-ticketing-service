@@ -19,12 +19,14 @@ export abstract class QueueRedisClient {
   /**
    * 대기열의 토큰 조회
    * @param queueUid
+   * @exception `ResourceNotFoundException`
    */
-  abstract getWaitQueue(queueUid: string): Promise<QueueDomain>;
+  abstract getWaitQueueInfo(queueUid: string): Promise<QueueDomain>;
 
   /**
    * 대기열에서 내 앞의 대기 인원 계산
-   * @returns 앞 대기 인원 수 (본인 제외), 대기열에 없으면 -1 반환
+   * @returns
+   * @exception `ResourceNotFoundException`
    */
   abstract getWaitingNumber(queue: QueueDomain): Promise<number>;
 

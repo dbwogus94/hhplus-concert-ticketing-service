@@ -14,13 +14,13 @@ type QueueDomainProp = {
 };
 
 export class QueueDomain {
-  constructor(private readonly prop: QueueDomainProp) {}
+  constructor(readonly prop: QueueDomainProp) {}
 
   /** 활성화 최대 시간(분) - 5분 */
   static MAX_ACTIVE_MINUTE: number = 5 * 60;
 
   get uid(): string {
-    return this.prop.status;
+    return this.prop.uid;
   }
 
   get userId(): number {
