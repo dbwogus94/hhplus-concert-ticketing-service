@@ -10,6 +10,14 @@ export class RedisClient implements OnModuleDestroy {
   }
 
   /**
+   * 트랜잭션을 시작합니다.
+   * @returns Redis Pipeline
+   */
+  multi(): ChainableCommander {
+    return this.redis.multi();
+  }
+
+  /**
    * 키-값을 조회합니다.
    * @param key 키
    * @returns 저장된 값
@@ -31,31 +39,12 @@ export class RedisClient implements OnModuleDestroy {
   }
 
   /**
-   * 키가 존재하는지 확인합니다.
-   * @param key 키
-   * @returns 존재 여부
-   */
-  async exists(key: string): Promise<boolean> {
-    return (await this.redis.exists(key)) === 1;
-  }
-
-  /**
    * 키를 삭제합니다.
    * @param key 키
    * @returns 삭제된 키의 수
    */
   async del(key: string): Promise<number> {
     return await this.redis.del(key);
-  }
-
-  /**
-   * 키의 만료 시간을 설정합니다.
-   * @param key 키
-   * @param seconds 만료 시간(초)
-   * @returns 성공 여부
-   */
-  async expire(key: string, seconds: number): Promise<boolean> {
-    return (await this.redis.expire(key, seconds)) === 1;
   }
 
   /**
@@ -123,6 +112,8 @@ export class RedisClient implements OnModuleDestroy {
 
   /**
    * zrank 순위를 조회 합니다.
+   * - 자신을 포함한 순위를 계산 합니다. ( +1 보정 )
+   * ex) 앞에 9개가 있다면 10을 리턴합니다.
    * @param key
    * @returns
    */
@@ -134,35 +125,18 @@ export class RedisClient implements OnModuleDestroy {
   /**
    * zscore 점수를 조회 합니다.
    * @param key
+   * @param member - 정학하게 일치하는 해야합니다.
    * @returns
    */
   async zscore(key: string, member: string): Promise<string> {
     return await this.redis.zscore(key, member);
   }
 
-  /**
-   * Set에 여러 값을 추가합니다.
-   * @param key Set 키
-   * @param members 추가할 값들
-   * @returns 추가된 항목 수
-   */
-  async sadd(key: string, ...members: string[]): Promise<number> {
-    return await this.redis.sadd(key, ...members);
-  }
-
-  /**
-   * Set의 모든 멤버를 조회합니다.
-   * @param key Set 키
-   * @returns Set의 모든 멤버
-   */
-  async smembers(key: string): Promise<string[]> {
-    return await this.redis.smembers(key);
-  }
-
   /* ---------------------- Hash ---------------------- */
 
   /**
    * Hash에 단일 필드를 설정합니다.
+   * - redis는 모든 값을 string로 관리한다. 때문에 값이 들어갔다 나오는 경우 모두 문자열이 리턴된다.
    * @param key Hash 키
    * @param field 필드 이름
    * @param value 값
@@ -178,6 +152,7 @@ export class RedisClient implements OnModuleDestroy {
 
   /**
    * Hash에 여러 필드를 한번에 설정합니다.
+   * - redis는 모든 값을 string로 관리한다. 때문에 값이 들어갔다 나오는 경우 모두 문자열이 리턴된다.
    * @param key Hash 키
    * @param data 필드-값 쌍의 객체
    * @returns 성공 여부
@@ -210,16 +185,6 @@ export class RedisClient implements OnModuleDestroy {
   }
 
   /**
-   * Hash에서 특정 필드가 존재하는지 확인합니다.
-   * @param key Hash 키
-   * @param field 필드 이름
-   * @returns 존재 여부
-   */
-  async hexists(key: string, field: string): Promise<boolean> {
-    return (await this.redis.hexists(key, field)) === 1;
-  }
-
-  /**
    * Hash에서 특정 필드를 삭제합니다.
    * @param key Hash 키
    * @param field 필드 이름
@@ -227,13 +192,5 @@ export class RedisClient implements OnModuleDestroy {
    */
   async hdel(key: string, field: string): Promise<number> {
     return await this.redis.hdel(key, field);
-  }
-
-  /**
-   * 트랜잭션을 시작합니다.
-   * @returns Redis Pipeline
-   */
-  multi(): ChainableCommander {
-    return this.redis.multi();
   }
 }
