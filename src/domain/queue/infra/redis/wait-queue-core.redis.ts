@@ -2,8 +2,8 @@ import { Injectable } from '@nestjs/common';
 
 import { ResourceNotFoundException } from 'src/common';
 import { RedisClient } from 'src/global';
-import { SetWaitQueueParam, WaitQueueRedis } from './wait-queue.redis';
-import { QueueDomain } from '../../domain';
+import { WaitQueueDomain } from '../../domain';
+import { WaitQueueRedis } from './wait-queue.redis';
 
 @Injectable()
 export class WaitQueueCoreRedis extends WaitQueueRedis {
@@ -16,7 +16,7 @@ export class WaitQueueCoreRedis extends WaitQueueRedis {
   }
 
   // Note: 하나의 자료구조로 어떻게 관리할까?
-  override async setWaitQueue(param: SetWaitQueueParam): Promise<void> {
+  override async inWaitQueue(param: WaitQueueDomain): Promise<void> {
     const json = JSON.stringify(param);
 
     await this.redisClient
@@ -28,7 +28,7 @@ export class WaitQueueCoreRedis extends WaitQueueRedis {
       .exec();
   }
 
-  override async getWaitQueueInfo(queueUid: string): Promise<QueueDomain> {
+  override async getWaitQueue(queueUid: string): Promise<WaitQueueDomain> {
     const json = await this.redisClient.hget(
       `${this.WAITING_INFO_KEY}:${queueUid}`,
       'info',
@@ -37,10 +37,10 @@ export class WaitQueueCoreRedis extends WaitQueueRedis {
 
     if (!queueRecord || Object.keys(queueRecord).length === 0)
       throw new ResourceNotFoundException();
-    return QueueDomain.from(queueRecord as any);
+    return WaitQueueDomain.from(queueRecord as any);
   }
 
-  override async getWaitingNumber(queue: QueueDomain): Promise<number> {
+  override async getWaitingNumber(queue: WaitQueueDomain): Promise<number> {
     const rank = await this.redisClient.zrank(
       this.WAITING_QUEUE_KEY,
       JSON.stringify(queue.prop), // member는 저장했던 데이터와 정확히 일치해야 한다.

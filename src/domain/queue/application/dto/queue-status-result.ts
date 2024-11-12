@@ -1,6 +1,6 @@
-import { GetQueueInfo, QueueStatus } from '../../domain';
+import { GetWaitQueueInfo, QueueStatus } from '../../domain';
 
-type QueueStatusResultParam = GetQueueInfo & {
+type QueueStatusResultParam = GetWaitQueueInfo & {
   accessToken?: string;
 };
 

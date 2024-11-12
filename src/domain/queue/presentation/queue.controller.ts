@@ -2,7 +2,7 @@ import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
 import { QueueFacade } from '../application';
-import { WriteQueueCommand } from '../domain';
+import { WriteWaitQueueCommand } from '../domain';
 import { DocumentHelper } from './document';
 import {
   PostQueueStateRequest,
@@ -23,7 +23,7 @@ export class QueueController {
     @Body() body: PostQueueTokenRequest,
   ): Promise<PostQueueTokenResponse> {
     const info = await this.queueFacade.createQueue(
-      WriteQueueCommand.from({ ...body }),
+      WriteWaitQueueCommand.from({ ...body }),
     );
     return PostQueueTokenResponse.of({ ...info });
   }

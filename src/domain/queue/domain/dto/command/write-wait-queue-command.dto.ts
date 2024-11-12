@@ -1,12 +1,12 @@
-import { QueueEntity } from '../../model';
+import { WaitQueueDomain } from '../../model';
 
 type WriteReservationCommandProp = {
   readonly concertId: number;
   readonly userId: number;
 };
 
-export class WriteQueueCommand
-  implements Pick<QueueEntity, 'userId' | 'concertId'>
+export class WriteWaitQueueCommand
+  implements Pick<WaitQueueDomain, 'userId' | 'concertId'>
 {
   constructor(readonly prop: WriteReservationCommandProp) {}
 
@@ -18,7 +18,7 @@ export class WriteQueueCommand
     return this.prop.concertId;
   }
 
-  static from(prop: WriteReservationCommandProp): WriteQueueCommand {
-    return new WriteQueueCommand(prop);
+  static from(prop: WriteReservationCommandProp): WriteWaitQueueCommand {
+    return new WriteWaitQueueCommand(prop);
   }
 }

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
 import { RedisClient } from 'src/global';
-import { ActiveQueueDomain, WaitQueueDomain } from '../../domain';
+import { ActiveQueueDomain } from '../../domain';
 import { ActiveQueueRedis, FindRange } from './active-queue.redis';
 
 @Injectable()
@@ -17,7 +17,7 @@ export class ActiveQueueCoreRedis extends ActiveQueueRedis {
   }
 
   override async findActiveQueue(
-    queueUid: any,
+    queueUid: string,
   ): Promise<ActiveQueueDomain | null> {
     const json = await this.redisClient.get(queueUid);
     return json ? ActiveQueueDomain.from(JSON.parse(json)) : null;
@@ -53,7 +53,7 @@ export class ActiveQueueCoreRedis extends ActiveQueueRedis {
 
   override async setExActiveQueue(
     queueUid: string,
-    queue: WaitQueueDomain,
+    queue: ActiveQueueDomain,
   ): Promise<void> {
     // 만료시간 설정
     this.redisClient.setEX(

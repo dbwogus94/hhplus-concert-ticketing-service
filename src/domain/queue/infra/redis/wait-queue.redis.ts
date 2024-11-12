@@ -14,14 +14,14 @@ export abstract class WaitQueueRedis {
    * - ZADD 를 사용해 Sorted Set으로 저장한다.
    * @param param
    */
-  abstract setWaitQueue(param: SetWaitQueueParam): Promise<void>;
+  abstract inWaitQueue(param: SetWaitQueueParam): Promise<void>;
 
   /**
    * 대기열의 토큰 조회
    * @param queueUid
    * @exception `ResourceNotFoundException`
    */
-  abstract getWaitQueueInfo(queueUid: string): Promise<WaitQueueDomain>;
+  abstract getWaitQueue(queueUid: string): Promise<WaitQueueDomain>;
 
   /**
    * 대기열에서 내 앞의 대기 인원 계산

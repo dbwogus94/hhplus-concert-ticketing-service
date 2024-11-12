@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ActiveQueueDomain, QueueDomain } from '../../domain';
+import { ActiveQueueDomain } from '../../domain';
 
 export type FindRange = { start: number; stop: number };
 
@@ -17,7 +17,7 @@ export abstract class ActiveQueueRedis {
 
   abstract setExActiveQueue(
     queueUid: string,
-    queue: QueueDomain,
+    queue: ActiveQueueDomain,
   ): Promise<void>;
 
   /**

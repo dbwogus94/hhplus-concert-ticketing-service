@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import {
-  CreateQueueInfo,
+  CreateWaitQueueInfo,
   QueueService,
   QueueStatus,
-  WriteQueueCommand,
+  WriteWaitQueueCommand,
 } from '../domain';
 import { AuthService } from 'src/domain/auth';
 import { QueueStatusResult } from './dto';
@@ -15,13 +15,15 @@ export class QueueFacade {
     private readonly authService: AuthService,
   ) {}
 
-  async createQueue(command: WriteQueueCommand): Promise<CreateQueueInfo> {
-    const query = await this.queueService.createQueue(command);
+  async createQueue(
+    command: WriteWaitQueueCommand,
+  ): Promise<CreateWaitQueueInfo> {
+    const query = await this.queueService.createWaitQueue(command);
     return query;
   }
 
   async getQueueStatus(queueUid: string) {
-    const queue = await this.queueService.getQueue(queueUid);
+    const queue = await this.queueService.getWaitQueue(queueUid);
 
     if (queue.status !== QueueStatus.WAIT) {
       const accessToken = this.authService.issueToken({
@@ -35,6 +37,6 @@ export class QueueFacade {
   }
 
   async changeQueueActiveStatus(activeCount: number): Promise<void> {
-    await this.queueService.batchQueueActiveStatus(activeCount);
+    await this.queueService.batchDeWaitQueuesAndInActiveQueue(activeCount);
   }
 }

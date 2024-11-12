@@ -8,6 +8,7 @@ type WaitQueueDomainProp = {
   concertId: number;
   status: QueueStatus;
   timestamp: number;
+  waitingNumber: number;
 };
 
 /**
@@ -34,6 +35,10 @@ export class WaitQueueDomain {
 
   get timestamp(): number {
     return this.prop.timestamp;
+  }
+
+  get waitingNumber(): number {
+    return this.prop.waitingNumber;
   }
 
   /* ================================ Domain Method ================================ */

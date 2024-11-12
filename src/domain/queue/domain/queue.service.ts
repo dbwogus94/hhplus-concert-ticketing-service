@@ -1,53 +1,73 @@
 import { Injectable } from '@nestjs/common';
 
-import { QueueRedisClient } from '../infra';
+import { ActiveQueueRedis, WaitQueueRedis } from '../infra';
 import {
-  CreateQueueInfo,
+  WriteWaitQueueCommand,
+  CreateWaitQueueInfo,
+  GetWaitQueueInfo,
   FindActiveQueueInfo,
-  GetQueueInfo,
-  WriteQueueCommand,
 } from './dto';
-import { QueueDomain, QueueEntity, QueueStatus } from './model';
+
+import { QueueStatus, WaitQueueDomain } from './model';
 
 @Injectable()
 export class QueueService {
-  constructor(private readonly redisClient: QueueRedisClient) {}
+  constructor(
+    private readonly waitQueueRedis: WaitQueueRedis,
+    private readonly activeQueueRedis: ActiveQueueRedis,
+  ) {}
 
-  async createQueue(command: WriteQueueCommand): Promise<CreateQueueInfo> {
+  async createWaitQueue(
+    command: WriteWaitQueueCommand,
+  ): Promise<CreateWaitQueueInfo> {
     const { concertId, userId } = command;
-    const param = {
-      uid: QueueEntity.generateUUIDv4(),
+    const waitQueue = WaitQueueDomain.from({
+      uid: WaitQueueDomain.generateUUIDv4(),
       userId,
       concertId,
       status: QueueStatus.WAIT,
       timestamp: Date.now(),
-    };
+      waitingNumber: 0,
+    });
 
-    await this.redisClient.setWaitQueue(param);
-    return CreateQueueInfo.of(QueueDomain.from(param));
+    await this.waitQueueRedis.inWaitQueue(waitQueue);
+    return CreateWaitQueueInfo.of(WaitQueueDomain.from(waitQueue));
   }
 
-  // TODO: 네이밍 변경 => getWaitQueue
-  async getQueue(queueUid: string): Promise<GetQueueInfo> {
-    const queue = await this.redisClient.getWaitQueueInfo(queueUid);
-    const waitingNumber = await this.redisClient.getWaitingNumber(queue);
-    return GetQueueInfo.of({ queue, waitingNumber });
+  async getWaitQueue(queueUid: string): Promise<GetWaitQueueInfo> {
+    const awaitQueue = await this.waitQueueRedis.getWaitQueue(queueUid);
+    const waitingNumber =
+      await this.waitQueueRedis.getWaitingNumber(awaitQueue);
+
+    return GetWaitQueueInfo.of({ queue: awaitQueue, waitingNumber });
   }
 
   async findActiveQueue(queueUid: string): Promise<FindActiveQueueInfo | null> {
-    const queue = await this.redisClient.findActiveQueue(queueUid);
-    if (queue.isFirstAccessAfterActive) {
-      queue.firstAccess(new Date());
-      await this.redisClient.setExActiveQueue(queue.uid, queue);
-    }
-    return queue ? FindActiveQueueInfo.of(queue) : null;
-  }
+    const activeQueue = await this.activeQueueRedis.findActiveQueue(queueUid);
 
-  async batchQueueActiveStatus(activeCount: number): Promise<void> {
-    await this.redisClient.setActiveQueues({ start: 0, stop: activeCount });
+    if (activeQueue?.isFirstAccessAfterActive) {
+      activeQueue.firstAccess(new Date());
+      await this.activeQueueRedis.setExActiveQueue(
+        activeQueue.uid,
+        activeQueue,
+      );
+    }
+
+    return activeQueue ? FindActiveQueueInfo.of(activeQueue) : null;
   }
 
   async expireActiveQueue(queueUid: string) {
-    await this.redisClient.deleteActiveQueue(queueUid);
+    await this.activeQueueRedis.deleteActiveQueue(queueUid);
+  }
+
+  /**
+   * 유량제어 방식 스케줄러에서 사용하는 메서드
+   * @param activeCount
+   */
+  async batchDeWaitQueuesAndInActiveQueue(activeCount: number): Promise<void> {
+    await this.activeQueueRedis.setActiveQueues({
+      start: 0,
+      stop: activeCount,
+    });
   }
 }
