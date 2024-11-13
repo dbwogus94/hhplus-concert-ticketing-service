@@ -35,7 +35,11 @@ export class QueueService {
   }
 
   async getWaitQueue(queueUid: string): Promise<GetWaitQueueInfo> {
-    const awaitQueue = await this.waitQueueRedis.getWaitQueue(queueUid);
+    const consertId = 1; // TODO: 임시
+    const awaitQueue = await this.waitQueueRedis.getWaitQueue(
+      consertId,
+      queueUid,
+    );
     const waitingNumber =
       await this.waitQueueRedis.getWaitingNumber(awaitQueue);
 
@@ -47,17 +51,14 @@ export class QueueService {
 
     if (activeQueue?.isFirstAccessAfterActive) {
       activeQueue.firstAccess(new Date());
-      await this.activeQueueRedis.setExActiveQueue(
-        activeQueue.uid,
-        activeQueue,
-      );
+      await this.activeQueueRedis.setExActiveQueue(activeQueue);
     }
 
     return activeQueue ? FindActiveQueueInfo.of(activeQueue) : null;
   }
 
   async expireActiveQueue(queueUid: string) {
-    await this.activeQueueRedis.deleteActiveQueue(queueUid);
+    await this.activeQueueRedis.deActiveQueue(1, queueUid);
   }
 
   /**
@@ -65,7 +66,8 @@ export class QueueService {
    * @param activeCount
    */
   async batchDeWaitQueuesAndInActiveQueue(activeCount: number): Promise<void> {
-    await this.activeQueueRedis.setActiveQueues({
+    const consertId = 1; // TODO: 임시
+    await this.activeQueueRedis.inActiveQueueWithTx(consertId, {
       start: 0,
       stop: activeCount,
     });
