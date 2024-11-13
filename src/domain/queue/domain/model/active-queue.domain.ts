@@ -14,9 +14,6 @@ type ActiveQueueDomainProp = {
 };
 
 export class ActiveQueueDomain {
-  private readonly WAITING_QUEUE_KEY = 'waiting:queue';
-  private readonly WAITING_INFO_KEY = 'waiting:info';
-
   constructor(readonly prop: ActiveQueueDomainProp) {}
 
   /** 활성화 최대 시간(분) - 5분 */
@@ -107,5 +104,9 @@ export class ActiveQueueDomain {
     }
     this.prop.status = QueueStatus.EXPIRE;
     return this;
+  }
+
+  toLiteral() {
+    return this.prop;
   }
 }

@@ -54,4 +54,8 @@ export class WaitQueueDomain {
   }
 
   // 대기시간 계산
+
+  toLiteral() {
+    return this.prop;
+  }
 }

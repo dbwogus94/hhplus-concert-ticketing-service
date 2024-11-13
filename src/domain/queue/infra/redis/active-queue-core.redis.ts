@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { RedisClient } from 'src/global';
 import { ActiveQueueDomain } from '../../domain';
-import { ActiveQueueRedis, FindRange } from './active-queue.redis';
+import { ActiveQueueRedis } from './active-queue.redis';
 import { RedisKeyManager } from './redis-key.manager';
 
 @Injectable()
@@ -12,48 +12,28 @@ export class ActiveQueueCoreRedis extends ActiveQueueRedis {
   }
 
   override async findActiveQueue(
+    concertId: number,
     queueUid: string,
   ): Promise<ActiveQueueDomain | null> {
-    const json = await this.redisClient.get(queueUid);
+    const key = RedisKeyManager.getActiveQueueInfoKey({ concertId, queueUid });
+    const json = await this.redisClient.get(key);
     return json ? ActiveQueueDomain.from(JSON.parse(json)) : null;
   }
 
-  override async inActiveQueueWithTx(
-    consertId: number,
-    range: FindRange,
+  override async inActiveQueuesWithTx(
+    activeQueues: ActiveQueueDomain[],
   ): Promise<void> {
-    const sortkey = RedisKeyManager.getWaitQueueSortKey(consertId);
-
-    // 1. 대기열에서 조회
-    const members = await this.redisClient.zrange(
-      sortkey,
-      range.start,
-      range.stop - 1, // 인덱스 0부터 시작 보정
-    );
-    if (members.length === 0) return;
-
     // redis 트랜잭션
     const multi = this.redisClient.multi();
-    members.forEach((member) => {
-      const waitQueue = JSON.parse(member);
-      waitQueue.active();
-
-      const waitRecord = RedisKeyManager.getWaitQueueKeyRecord({
-        concertId: waitQueue.concertId,
-        queueUid: waitQueue.uid,
-      });
-
+    activeQueues.forEach((queue) => {
       const activeInfoKey = RedisKeyManager.getActiveQueueInfoKey({
-        concertId: waitQueue.concertId,
-        queueUid: waitQueue.uid,
+        concertId: queue.concertId,
+        queueUid: queue.uid,
       });
+      queue.active();
 
       // 2. 활성 사용자로 등록
-      multi.set(activeInfoKey, member);
-
-      // 3. 대기열에서 제거
-      multi.zrem(waitRecord.sort, member);
-      multi.del(waitRecord.info);
+      multi.set(activeInfoKey, JSON.stringify(queue.toLiteral()));
     });
 
     // 한번에 전송

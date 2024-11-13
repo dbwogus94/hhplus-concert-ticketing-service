@@ -2,13 +2,11 @@ import { Injectable } from '@nestjs/common';
 
 import { RedisClient } from 'src/global';
 import { WaitQueueDomain } from '../../domain';
-import { WaitQueueRedis } from './wait-queue.redis';
+import { FindRange, WaitQueueRedis } from './wait-queue.redis';
 import { RedisKeyManager } from './redis-key.manager';
 
 @Injectable()
 export class WaitQueueCoreRedis extends WaitQueueRedis {
-  /** 대기열 key */
-
   constructor(private readonly redisClient: RedisClient) {
     super();
   }
@@ -21,7 +19,7 @@ export class WaitQueueCoreRedis extends WaitQueueRedis {
       queueUid,
     });
 
-    const json = JSON.stringify(param);
+    const json = JSON.stringify(param.prop);
     await this.redisClient
       .multi()
       // 대기열 순서
@@ -41,7 +39,7 @@ export class WaitQueueCoreRedis extends WaitQueueRedis {
     });
 
     const json = await this.redisClient.hget(waitKey.info, 'info');
-    const waitingNumber = this.redisClient.zrank(
+    const waitingNumber = await this.redisClient.zrank(
       waitKey.sort,
       json, // member는 저장했던 데이터와 정확히 일치해야 한다.
     );
@@ -51,16 +49,35 @@ export class WaitQueueCoreRedis extends WaitQueueRedis {
       : null;
   }
 
-  override async getWaitingNumber(queue: WaitQueueDomain): Promise<number> {
-    const waitKey = RedisKeyManager.getWaitQueueKeyRecord({
-      concertId: queue.concertId,
-      queueUid: queue.uid,
+  async getWaitQueues(
+    consertId: number,
+    range: FindRange,
+  ): Promise<WaitQueueDomain[]> {
+    const sortkey = RedisKeyManager.getWaitQueueSortKey(consertId);
+    const members = await this.redisClient.zrange(
+      sortkey,
+      range.start,
+      range.stop - 1, // 인덱스 0부터 시작 보정
+    );
+    return members.length > 0
+      ? members.map((m) => WaitQueueDomain.from(JSON.parse(m)))
+      : [];
+  }
+
+  async deWaitQueueWithTx(waitQueues: WaitQueueDomain[]): Promise<void> {
+    const multi = this.redisClient.multi();
+
+    waitQueues.forEach((queue) => {
+      const waitRecord = RedisKeyManager.getWaitQueueKeyRecord({
+        concertId: queue.concertId,
+        queueUid: queue.uid,
+      });
+
+      multi.zrem(waitRecord.sort, JSON.stringify(queue.toLiteral()));
+      multi.del(waitRecord.info);
     });
 
-    const rank = await this.redisClient.zrank(
-      waitKey.sort,
-      JSON.stringify(queue.prop), // member는 저장했던 데이터와 정확히 일치해야 한다.
-    );
-    return rank;
+    // 한번에 전송
+    await multi.exec();
   }
 }

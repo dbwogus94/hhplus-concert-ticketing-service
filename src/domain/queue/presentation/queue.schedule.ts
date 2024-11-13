@@ -30,12 +30,9 @@ export class QueueSchedule implements OnApplicationBootstrap {
     }
   }
 
-  // @Cron(CronExpression.EVERY_10_SECONDS, {
-  //   name: QueueSchedule.JOB.CHANGE_QUEUE_ACTIVE_STATUS,
-  // })
-  // @Cron(CronExpression.EVERY_MINUTE, {
-  //   name: QueueSchedule.JOB.CHANGE_QUEUE_ACTIVE_STATUS,
-  // })
+  @Cron(CronExpression.EVERY_MINUTE, {
+    name: QueueSchedule.JOB.CHANGE_QUEUE_ACTIVE_STATUS,
+  })
   async changeQueueActiveStatus() {
     this.logger.warn(`[${QueueSchedule.JOB.CHANGE_QUEUE_ACTIVE_STATUS}] start`);
 

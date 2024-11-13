@@ -8,7 +8,7 @@ import {
   FindActiveQueueInfo,
 } from './dto';
 
-import { QueueStatus, WaitQueueDomain } from './model';
+import { ActiveQueueDomain, QueueStatus, WaitQueueDomain } from './model';
 
 @Injectable()
 export class QueueService {
@@ -40,16 +40,20 @@ export class QueueService {
       consertId,
       queueUid,
     );
-    return GetWaitQueueInfo.of(awaitQueue);
+    return awaitQueue ? GetWaitQueueInfo.of(awaitQueue) : null;
   }
 
   async findActiveQueue(queueUid: string): Promise<FindActiveQueueInfo | null> {
-    const activeQueue = await this.activeQueueRedis.findActiveQueue(queueUid);
+    const consertId = 1; // TODO: 임시
+    const activeQueue = await this.activeQueueRedis.findActiveQueue(
+      consertId,
+      queueUid,
+    );
 
-    if (activeQueue?.isFirstAccessAfterActive) {
-      activeQueue.firstAccess(new Date());
-      await this.activeQueueRedis.setExActiveQueue(activeQueue);
-    }
+    // if (activeQueue?.isFirstAccessAfterActive) {
+    //   activeQueue.firstAccess(new Date());
+    //   await this.activeQueueRedis.setExActiveQueue(activeQueue);
+    // }
     return activeQueue ? FindActiveQueueInfo.of(activeQueue) : null;
   }
 
@@ -63,9 +67,18 @@ export class QueueService {
    */
   async batchDeWaitQueuesAndInActiveQueue(activeCount: number): Promise<void> {
     const consertId = 1; // TODO: 임시
-    await this.activeQueueRedis.inActiveQueueWithTx(consertId, {
+    const waitQueues = await this.waitQueueRedis.getWaitQueues(consertId, {
       start: 0,
       stop: activeCount,
     });
+
+    // 대기열 제거
+    await this.waitQueueRedis.deWaitQueueWithTx(waitQueues);
+
+    // 사용열 추가
+    const activeQueues = waitQueues.map((wq) =>
+      ActiveQueueDomain.from({ ...wq.toLiteral() }),
+    );
+    await this.activeQueueRedis.inActiveQueuesWithTx(activeQueues);
   }
 }

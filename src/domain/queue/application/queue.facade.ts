@@ -25,12 +25,12 @@ export class QueueFacade {
   async getQueueStatus(queueUid: string) {
     const waitQueue = await this.queueService.findWaitQueue(queueUid);
     if (waitQueue) {
-      return QueueStatusResult.of({ ...waitQueue });
+      return QueueStatusResult.of(waitQueue);
     }
 
     const activeQueue = await this.queueService.findActiveQueue(queueUid);
-    if (activeQueue) {
-      throw new ResourceNotFoundException();
+    if (!activeQueue) {
+      throw new ResourceNotFoundException('대기 상태의 토큰이 없습니다.');
     }
 
     const accessToken = this.authService.issueToken({

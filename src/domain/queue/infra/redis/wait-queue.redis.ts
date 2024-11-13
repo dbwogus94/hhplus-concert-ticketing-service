@@ -7,6 +7,8 @@ export type SetWaitQueueParam = Pick<
   'uid' | 'concertId' | 'status' | 'userId' | 'timestamp'
 >;
 
+export type FindRange = { start: number; stop: number };
+
 @Injectable()
 export abstract class WaitQueueRedis {
   /**
@@ -25,9 +27,10 @@ export abstract class WaitQueueRedis {
     queueUid: string,
   ): Promise<WaitQueueDomain>;
 
-  /**
-   * 대기열에서 내 앞의 대기 인원 계산
-   * @returns
-   */
-  abstract getWaitingNumber(queue: WaitQueueDomain): Promise<number>;
+  abstract getWaitQueues(
+    concertId: number,
+    range: FindRange,
+  ): Promise<WaitQueueDomain[]>;
+
+  abstract deWaitQueueWithTx(waitQueues: WaitQueueDomain[]): Promise<void>;
 }
