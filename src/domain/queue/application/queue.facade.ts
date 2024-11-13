@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import {
   CreateWaitQueueInfo,
   QueueService,
-  QueueStatus,
   WriteWaitQueueCommand,
 } from '../domain';
 import { AuthService } from 'src/domain/auth';
@@ -25,10 +24,11 @@ export class QueueFacade {
   async getQueueStatus(queueUid: string) {
     const queue = await this.queueService.getWaitQueue(queueUid);
 
-    if (queue.status !== QueueStatus.WAIT) {
+    if (queue.isActive) {
       const accessToken = this.authService.issueToken({
-        queueUid: queue.uid,
         userId: queue.userId,
+        concertId: queue.concertId,
+        queueUid: queue.uid,
       });
       return QueueStatusResult.of({ ...queue, accessToken });
     }

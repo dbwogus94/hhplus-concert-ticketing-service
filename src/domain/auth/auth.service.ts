@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 
 import { UserInfo } from 'src/common';
 
-type JwtPayload = Pick<UserInfo, 'userId' | 'queueUid'>;
+type JwtPayload = Pick<UserInfo, 'userId' | 'concertId' | 'queueUid'>;
 
 @Injectable()
 export class AuthService {

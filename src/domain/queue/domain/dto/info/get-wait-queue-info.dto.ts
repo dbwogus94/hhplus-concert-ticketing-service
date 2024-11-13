@@ -28,4 +28,8 @@ export class GetWaitQueueInfo implements Pick<WaitQueueDomain, 'status'> {
       param.waitingNumber,
     );
   }
+
+  get isActive() {
+    return this.status === QueueStatus.ACTIVE;
+  }
 }

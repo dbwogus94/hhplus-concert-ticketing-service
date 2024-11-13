@@ -1,6 +1,6 @@
 import { GetWaitQueueInfo, QueueStatus } from '../../domain';
 
-type QueueStatusResultParam = GetWaitQueueInfo & {
+type QueueStatusResultParam = Omit<GetWaitQueueInfo, 'isActive'> & {
   accessToken?: string;
 };
 
