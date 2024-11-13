@@ -18,6 +18,32 @@ export class RedisClient implements OnModuleDestroy {
   }
 
   /**
+   * 기존에 존재하는 데이터에 ttl을 설정한다.
+   * - key 레벨에서만 지원한다.
+   * ```
+   *  // String
+   *  await redis.set('key', 'value', 'EX', 60);
+   *
+   *  // Hash
+   *  await redis.hset('hash', 'field', 'value');
+   *  await redis.expire('hash', 60);
+   *
+   *  // Set
+   *  await redis.sadd('set', 'member');
+   *  await redis.expire('set', 60);
+   *
+   *  // Sorted Set
+   *  await redis.zadd('sortedset', 1, 'member');
+   *  await redis.expire('sortedset', 60);
+   * ```
+   * @param key
+   * @param ttlSeconds 만료 시간(초)
+   */
+  async expire(key: string, { ttlSeconds }: { ttlSeconds?: number } = {}) {
+    await this.redis.expire(key, ttlSeconds);
+  }
+
+  /**
    * 키-값을 조회합니다.
    * @param key 키
    * @returns 저장된 값
