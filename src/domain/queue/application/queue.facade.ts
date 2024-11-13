@@ -6,6 +6,7 @@ import {
 } from '../domain';
 import { AuthService } from 'src/domain/auth';
 import { QueueStatusResult } from './dto';
+import { ResourceNotFoundException } from 'src/common';
 
 @Injectable()
 export class QueueFacade {
@@ -22,18 +23,26 @@ export class QueueFacade {
   }
 
   async getQueueStatus(queueUid: string) {
-    const queue = await this.queueService.getWaitQueue(queueUid);
-
-    if (queue.isActive) {
-      const accessToken = this.authService.issueToken({
-        userId: queue.userId,
-        concertId: queue.concertId,
-        queueUid: queue.uid,
-      });
-      return QueueStatusResult.of({ ...queue, accessToken });
+    const waitQueue = await this.queueService.findWaitQueue(queueUid);
+    if (waitQueue) {
+      return QueueStatusResult.of({ ...waitQueue });
     }
 
-    return QueueStatusResult.of(queue);
+    const activeQueue = await this.queueService.findActiveQueue(queueUid);
+    if (activeQueue) {
+      throw new ResourceNotFoundException();
+    }
+
+    const accessToken = this.authService.issueToken({
+      userId: activeQueue.userId,
+      concertId: activeQueue.concertId,
+      queueUid: activeQueue.uid,
+    });
+    return QueueStatusResult.of({
+      status: activeQueue.status,
+      waitingNumber: 0,
+      accessToken,
+    });
   }
 
   async changeQueueActiveStatus(activeCount: number): Promise<void> {

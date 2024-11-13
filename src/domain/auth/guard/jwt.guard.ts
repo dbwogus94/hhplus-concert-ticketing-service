@@ -31,6 +31,7 @@ export class JwtGuard extends BaseJwtGuard {
     const userInfo: UserInfo = {
       userId: payload.userId,
       queueUid: payload.queueUid,
+      concertId: payload.concertId,
       jwt,
     };
     request.user = userInfo;

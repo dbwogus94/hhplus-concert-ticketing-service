@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 
-import { ResourceNotFoundException } from 'src/common';
 import { RedisClient } from 'src/global';
 import { WaitQueueDomain } from '../../domain';
 import { WaitQueueRedis } from './wait-queue.redis';
@@ -32,7 +31,7 @@ export class WaitQueueCoreRedis extends WaitQueueRedis {
       .exec();
   }
 
-  override async getWaitQueue(
+  override async findWaitQueue(
     concertId: number,
     queueUid: string,
   ): Promise<WaitQueueDomain> {
@@ -40,12 +39,16 @@ export class WaitQueueCoreRedis extends WaitQueueRedis {
       concertId,
       queueUid,
     });
-    const json = await this.redisClient.hget(waitKey.info, 'info');
-    const queueRecord = JSON.parse(json);
 
-    if (!queueRecord || Object.keys(queueRecord).length === 0)
-      throw new ResourceNotFoundException();
-    return WaitQueueDomain.from(queueRecord as any);
+    const json = await this.redisClient.hget(waitKey.info, 'info');
+    const waitingNumber = this.redisClient.zrank(
+      waitKey.sort,
+      json, // member는 저장했던 데이터와 정확히 일치해야 한다.
+    );
+
+    return json && json !== '{}'
+      ? WaitQueueDomain.from({ ...(JSON.parse(json) as any), waitingNumber })
+      : null;
   }
 
   override async getWaitingNumber(queue: WaitQueueDomain): Promise<number> {
@@ -58,7 +61,6 @@ export class WaitQueueCoreRedis extends WaitQueueRedis {
       waitKey.sort,
       JSON.stringify(queue.prop), // member는 저장했던 데이터와 정확히 일치해야 한다.
     );
-    if (rank === -1) throw new ResourceNotFoundException();
     return rank;
   }
 }

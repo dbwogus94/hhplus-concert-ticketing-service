@@ -34,16 +34,13 @@ export class QueueService {
     return CreateWaitQueueInfo.of(WaitQueueDomain.from(waitQueue));
   }
 
-  async getWaitQueue(queueUid: string): Promise<GetWaitQueueInfo> {
+  async findWaitQueue(queueUid: string): Promise<GetWaitQueueInfo> {
     const consertId = 1; // TODO: 임시
-    const awaitQueue = await this.waitQueueRedis.getWaitQueue(
+    const awaitQueue = await this.waitQueueRedis.findWaitQueue(
       consertId,
       queueUid,
     );
-    const waitingNumber =
-      await this.waitQueueRedis.getWaitingNumber(awaitQueue);
-
-    return GetWaitQueueInfo.of({ queue: awaitQueue, waitingNumber });
+    return GetWaitQueueInfo.of(awaitQueue);
   }
 
   async findActiveQueue(queueUid: string): Promise<FindActiveQueueInfo | null> {
@@ -53,7 +50,6 @@ export class QueueService {
       activeQueue.firstAccess(new Date());
       await this.activeQueueRedis.setExActiveQueue(activeQueue);
     }
-
     return activeQueue ? FindActiveQueueInfo.of(activeQueue) : null;
   }
 

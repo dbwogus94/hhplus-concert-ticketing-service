@@ -19,9 +19,8 @@ export abstract class WaitQueueRedis {
   /**
    * 대기열의 토큰 조회
    * @param queueUid
-   * @exception `ResourceNotFoundException`
    */
-  abstract getWaitQueue(
+  abstract findWaitQueue(
     concertId: number,
     queueUid: string,
   ): Promise<WaitQueueDomain>;
@@ -29,7 +28,6 @@ export abstract class WaitQueueRedis {
   /**
    * 대기열에서 내 앞의 대기 인원 계산
    * @returns
-   * @exception `ResourceNotFoundException`
    */
   abstract getWaitingNumber(queue: WaitQueueDomain): Promise<number>;
 }
