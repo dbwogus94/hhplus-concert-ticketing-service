@@ -61,7 +61,6 @@ export class ActiveQueueDomain {
 
   /**
    * 활성화 가능 여부
-   * @returns {boolean}
    */
   get isActive(): boolean {
     return this.status === QueueStatus.WAIT;
@@ -69,15 +68,19 @@ export class ActiveQueueDomain {
 
   /**
    * 만료 가능 여부
-   * @returns {boolean}
    */
   get isExpire(): boolean {
-    return this.status === QueueStatus.WAIT;
+    return this.prop.status === QueueStatus.WAIT;
   }
 
+  /**
+   * 활성화후 첫 엑세스
+   */
   get isFirstAccessAfterActive(): boolean {
     return (
-      this.status === QueueStatus.ACTIVE && this.activeFirstAccessAt === null
+      this.prop.status === QueueStatus.ACTIVE &&
+      this.prop.activedAt != null &&
+      this.prop.activeFirstAccessAt == null
     );
   }
 
@@ -91,7 +94,7 @@ export class ActiveQueueDomain {
   }
 
   firstAccess(activeFirstAccessAt: Date = new Date()): this {
-    if (!this.isActive) {
+    if (!this.isFirstAccessAfterActive) {
       throw new ConflictStatusException('활성화 상태가 아닙니다.');
     }
     this.prop.activeFirstAccessAt = activeFirstAccessAt;

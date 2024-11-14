@@ -13,10 +13,11 @@ export abstract class ActiveQueueRedis {
   ): Promise<void>;
 
   /**
-   * 사용열에 들어 있는 객체에 TTL을 부여한다.
+   * 사용열에 값을 다시 부여한다. TTL을 부여한다.
+   * - set + EX + NX 사용
    * @param queue
    */
-  abstract setExActiveQueue(queue: ActiveQueueDomain): Promise<void>;
+  abstract reInActiveQueueWithTTL(queue: ActiveQueueDomain): Promise<void>;
 
   /**
    * 사용열에 있는 토큰을 제거한다.

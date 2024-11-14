@@ -40,14 +40,15 @@ export class ActiveQueueCoreRedis extends ActiveQueueRedis {
     await multi.exec();
   }
 
-  override async setExActiveQueue(queue: ActiveQueueDomain): Promise<void> {
+  override async reInActiveQueueWithTTL(
+    queue: ActiveQueueDomain,
+  ): Promise<void> {
     const activetkey = RedisKeyManager.getActiveQueueInfoKey({
       concertId: queue.concertId,
       queueUid: queue.uid,
     });
 
-    // 만료시간 설정
-    this.redisClient.expire(activetkey, {
+    await this.redisClient.setEX(activetkey, JSON.stringify(queue), {
       ttlSeconds: ActiveQueueDomain.MAX_ACTIVE_MINUTE,
     });
   }

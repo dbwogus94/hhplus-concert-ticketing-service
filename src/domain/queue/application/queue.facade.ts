@@ -4,16 +4,12 @@ import {
   QueueService,
   WriteWaitQueueCommand,
 } from '../domain';
-import { AuthService } from 'src/domain/auth';
 import { QueueStatusResult } from './dto';
 import { ResourceNotFoundException } from 'src/common';
 
 @Injectable()
 export class QueueFacade {
-  constructor(
-    private readonly queueService: QueueService,
-    private readonly authService: AuthService,
-  ) {}
+  constructor(private readonly queueService: QueueService) {}
 
   async createQueue(
     command: WriteWaitQueueCommand,
@@ -33,15 +29,10 @@ export class QueueFacade {
       throw new ResourceNotFoundException('대기 상태의 토큰이 없습니다.');
     }
 
-    const accessToken = this.authService.issueToken({
-      userId: activeQueue.userId,
-      concertId: activeQueue.concertId,
-      queueUid: activeQueue.uid,
-    });
     return QueueStatusResult.of({
       status: activeQueue.status,
       waitingNumber: 0,
-      accessToken,
+      accessToken: activeQueue.uid,
     });
   }
 

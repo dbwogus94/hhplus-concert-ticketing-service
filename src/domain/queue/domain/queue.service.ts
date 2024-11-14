@@ -50,10 +50,23 @@ export class QueueService {
       queueUid,
     );
 
-    // if (activeQueue?.isFirstAccessAfterActive) {
-    //   activeQueue.firstAccess(new Date());
-    //   await this.activeQueueRedis.setExActiveQueue(activeQueue);
-    // }
+    return activeQueue ? FindActiveQueueInfo.of(activeQueue) : null;
+  }
+
+  async findActiveQueueFirstAccess(
+    queueUid: string,
+  ): Promise<FindActiveQueueInfo | null> {
+    const consertId = 1; // TODO: 임시
+    const activeQueue = await this.activeQueueRedis.findActiveQueue(
+      consertId,
+      queueUid,
+    );
+
+    if (activeQueue?.isFirstAccessAfterActive) {
+      activeQueue.firstAccess(new Date());
+      await this.activeQueueRedis.reInActiveQueueWithTTL(activeQueue);
+    }
+
     return activeQueue ? FindActiveQueueInfo.of(activeQueue) : null;
   }
 

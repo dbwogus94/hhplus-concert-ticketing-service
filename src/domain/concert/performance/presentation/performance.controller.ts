@@ -11,10 +11,11 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 
 import { GetUserInfoDecorator } from 'src/common';
-import { JwtGuard } from 'src/domain/auth';
+
 import { PerformanceFacade } from '../application';
 import { WriteReservationCommand } from '../domain';
 import { DocumentHelper } from './document';
+import { QueueGuard } from 'src/domain/queue';
 import {
   GetPerformancesQuery,
   GetPerformancesResponse,
@@ -29,9 +30,7 @@ import {
 export class PerformanceController {
   constructor(private readonly performanceFacade: PerformanceFacade) {}
 
-  //
   @DocumentHelper('getPerformances')
-  @UseGuards(JwtGuard)
   @Get('/performances')
   @HttpCode(200)
   async getPerformances(
@@ -47,7 +46,7 @@ export class PerformanceController {
   }
 
   @DocumentHelper('getSeats')
-  @UseGuards(JwtGuard)
+  @UseGuards(QueueGuard)
   @Get('/:performanceId/seats')
   @HttpCode(200)
   async getSeats(
@@ -61,7 +60,7 @@ export class PerformanceController {
   }
 
   @DocumentHelper('postSeatReservation')
-  @UseGuards(JwtGuard)
+  @UseGuards(QueueGuard)
   @Post('/:performanceId/seats/:seatId/reservations')
   @HttpCode(201)
   async postSeatReservation(

@@ -40,14 +40,12 @@ function setupSwagger(app: INestApplication) {
   const documentBuilder = new DocumentBuilder()
     .setTitle('콘서트 예메 API')
     .setDescription('콘서트 예메 API')
-    .addBearerAuth(
+    .addApiKey(
       {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        name: 'Access JWT',
-        description: 'Enter Access Token',
+        type: 'apiKey',
+        name: 'x-queue-token',
         in: 'header',
+        description: 'Authentication token',
       },
       SERVICE_ACCESS_TOKEN,
     )

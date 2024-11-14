@@ -1,7 +1,5 @@
 import { Module } from '@nestjs/common';
 
-import { AuthModule } from '../auth';
-import { QueueController, QueueSchedule } from './presentation';
 import { QueueFacade } from './application';
 import { QueueService } from './domain/queue.service';
 import {
@@ -10,9 +8,10 @@ import {
   WaitQueueCoreRedis,
   WaitQueueRedis,
 } from './infra';
+import { QueueController, QueueSchedule } from './presentation';
 
 @Module({
-  imports: [AuthModule],
+  imports: [],
   controllers: [QueueController],
   providers: [
     QueueSchedule,
