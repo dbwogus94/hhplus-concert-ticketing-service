@@ -21,7 +21,6 @@ type API_DOC_TYPE = keyof PerformanceController;
 const decorators: Record<API_DOC_TYPE, Function> = {
   getPerformances: () =>
     applyDecorators(
-      ApiSecurity(SERVICE_ACCESS_TOKEN),
       ApiOperation({ summary: '콘서트의 공연 리스트' }),
       ApiOkResponse({
         description: '콘서트의 공연 리스트 조회',

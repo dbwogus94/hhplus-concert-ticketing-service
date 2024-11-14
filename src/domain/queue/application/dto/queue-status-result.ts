@@ -1,7 +1,9 @@
-import { GetQueueInfo, QueueStatus } from '../../domain';
+import { QueueStatus } from '../../domain';
 
-type QueueStatusResultParam = GetQueueInfo & {
-  accessToken?: string;
+type QueueStatusResultParam = {
+  status: QueueStatus;
+  waitingNumber: number;
+  accessToken?: string | null;
 };
 
 export class QueueStatusResult {

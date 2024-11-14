@@ -1,40 +1,42 @@
 import { Injectable } from '@nestjs/common';
 import {
-  CreateQueueInfo,
+  CreateWaitQueueInfo,
   QueueService,
-  QueueStatus,
-  WriteQueueCommand,
+  WriteWaitQueueCommand,
 } from '../domain';
-import { AuthService } from 'src/domain/auth';
 import { QueueStatusResult } from './dto';
+import { ResourceNotFoundException } from 'src/common';
 
 @Injectable()
 export class QueueFacade {
-  constructor(
-    private readonly queueService: QueueService,
-    private readonly authService: AuthService,
-  ) {}
+  constructor(private readonly queueService: QueueService) {}
 
-  async createQueue(command: WriteQueueCommand): Promise<CreateQueueInfo> {
-    const query = await this.queueService.createQueue(command);
+  async createQueue(
+    command: WriteWaitQueueCommand,
+  ): Promise<CreateWaitQueueInfo> {
+    const query = await this.queueService.createWaitQueue(command);
     return query;
   }
 
   async getQueueStatus(queueUid: string) {
-    const queue = await this.queueService.getQueue(queueUid);
-
-    if (queue.status !== QueueStatus.WAIT) {
-      const accessToken = this.authService.issueToken({
-        queueUid: queue.uid,
-        userId: queue.userId,
-      });
-      return QueueStatusResult.of({ ...queue, accessToken });
+    const waitQueue = await this.queueService.findWaitQueue(queueUid);
+    if (waitQueue) {
+      return QueueStatusResult.of(waitQueue);
     }
 
-    return QueueStatusResult.of(queue);
+    const activeQueue = await this.queueService.findActiveQueue(queueUid);
+    if (!activeQueue) {
+      throw new ResourceNotFoundException('대기 상태의 토큰이 없습니다.');
+    }
+
+    return QueueStatusResult.of({
+      status: activeQueue.status,
+      waitingNumber: 0,
+      accessToken: activeQueue.uid,
+    });
   }
 
   async changeQueueActiveStatus(activeCount: number): Promise<void> {
-    await this.queueService.batchQueueActiveStatus(activeCount);
+    await this.queueService.batchDeWaitQueuesAndInActiveQueue(activeCount);
   }
 }

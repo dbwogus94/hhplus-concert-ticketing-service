@@ -1,19 +1,24 @@
 import { Module } from '@nestjs/common';
 
-import { AuthModule } from '../auth';
 import { QueueFacade } from './application';
 import { QueueService } from './domain/queue.service';
-import { QueueCoreRedisClient, QueueRedisClient } from './infra';
+import {
+  ActiveQueueCoreRedis,
+  ActiveQueueRedis,
+  WaitQueueCoreRedis,
+  WaitQueueRedis,
+} from './infra';
 import { QueueController, QueueSchedule } from './presentation';
 
 @Module({
-  imports: [AuthModule],
+  imports: [],
   controllers: [QueueController],
   providers: [
     QueueSchedule,
     QueueFacade,
     QueueService,
-    { provide: QueueRedisClient, useClass: QueueCoreRedisClient },
+    { provide: WaitQueueRedis, useClass: WaitQueueCoreRedis },
+    { provide: ActiveQueueRedis, useClass: ActiveQueueCoreRedis },
   ],
   exports: [QueueService],
 })

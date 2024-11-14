@@ -1,15 +1,10 @@
-import { QueueDomain, QueueEntity, QueueStatus } from '../../model';
+import { ActiveQueueDomain, QueueStatus } from '../../model';
 
 export class FindActiveQueueInfo
   implements
     Pick<
-      QueueEntity,
-      | 'uid'
-      | 'userId'
-      | 'concertId'
-      | 'status'
-      | 'activeExpireAt'
-      | 'activeFirstAccessAt'
+      ActiveQueueDomain['prop'],
+      'uid' | 'userId' | 'concertId' | 'status' | 'activeFirstAccessAt'
     >
 {
   constructor(
@@ -21,10 +16,10 @@ export class FindActiveQueueInfo
     readonly activeFirstAccessAt?: Date,
   ) {}
 
-  static of(domain: QueueDomain[]): FindActiveQueueInfo[];
-  static of(domain: QueueDomain): FindActiveQueueInfo;
+  static of(domain: ActiveQueueDomain[]): FindActiveQueueInfo[];
+  static of(domain: ActiveQueueDomain): FindActiveQueueInfo;
   static of(
-    domain: QueueDomain | QueueDomain[],
+    domain: ActiveQueueDomain | ActiveQueueDomain[],
   ): FindActiveQueueInfo | FindActiveQueueInfo[] {
     if (Array.isArray(domain)) return domain.map((d) => this.of(d));
     return new FindActiveQueueInfo(

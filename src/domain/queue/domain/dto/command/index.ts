@@ -1,1 +1,1 @@
-export * from './write-queue-command.dto';
+export * from './write-wait-queue-command.dto';
