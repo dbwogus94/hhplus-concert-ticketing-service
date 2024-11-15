@@ -1,16 +1,11 @@
 import { Module } from '@nestjs/common';
 
-import { PerformanceService } from './domain/performance.service';
-import { PerformanceController } from './presentation/performance.controller';
-import {
-  PerformanceCoreRepository,
-  PerformanceRepository,
-  ReservationCoreRepository,
-  ReservationRepository,
-} from './infra';
-import { PerformanceFacade } from './application';
-import { UserModule } from 'src/domain/user';
 import { QueueModule } from 'src/domain/queue';
+import { UserModule } from 'src/domain/user';
+import { PerformanceFacade } from './application';
+import { PerformanceService } from './domain/performance.service';
+import { PerformanceCoreRepository, PerformanceRepository } from './infra';
+import { PerformanceController } from './presentation/performance.controller';
 
 @Module({
   imports: [UserModule, QueueModule],
@@ -21,10 +16,6 @@ import { QueueModule } from 'src/domain/queue';
     {
       provide: PerformanceRepository,
       useClass: PerformanceCoreRepository,
-    },
-    {
-      provide: ReservationRepository,
-      useClass: ReservationCoreRepository,
     },
   ],
   exports: [PerformanceService],
