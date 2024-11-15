@@ -1,23 +1,39 @@
 import { Injectable } from '@nestjs/common';
-import { ReservationRepository } from '../infra';
-import { GetReservationInfo, WriteReservationCommand } from './dto';
 import { EntityManager } from 'typeorm';
+
 import { ConflictStatusException } from 'src/common';
+import { ReservationStatus } from './model';
+import { GetReservationInfo, WriteReservationCommand } from './dto';
+import { ReservationRepository } from '../infra';
 
 @Injectable()
 export class ReservationService {
   constructor(private readonly reservationRepo: ReservationRepository) {}
 
-  async reserve(command: WriteReservationCommand) {
-    const reservationId = await this.reservationRepo.insertOne({
+  async reserve(command: WriteReservationCommand): Promise<GetReservationInfo> {
+    const reservation = await this.reservationRepo.save({
       seatId: command.seatId,
       userId: command.userId,
       price: command.price,
+      status: ReservationStatus.REQUEST,
     });
-    return reservationId;
+    return GetReservationInfo.of(reservation);
   }
 
-  getSeatReservation(
+  async confirm(reservationId: number): Promise<GetReservationInfo> {
+    const reservation = await this.reservationRepo.getReservationBy({
+      id: reservationId,
+    });
+
+    reservation.confirm();
+    await this.reservationRepo.updateReservationStatus(
+      reservation.id,
+      reservation.status,
+    );
+    return GetReservationInfo.of(reservation);
+  }
+
+  getReservation(
     reservationId: number,
     userId: number,
   ): (manager?: EntityManager) => Promise<GetReservationInfo> {

@@ -25,4 +25,8 @@ export class PerformanceFacade {
   async reserveSeat(seatId: number) {
     await this.performanceService.reserveSeat(seatId)();
   }
+
+  async bookingSeat(seatId: number) {
+    await this.performanceService.bookingSeat(seatId)();
+  }
 }

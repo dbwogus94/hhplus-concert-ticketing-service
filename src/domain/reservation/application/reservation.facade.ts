@@ -1,16 +1,16 @@
 import { Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
-import { UserService } from 'src/domain/user';
-import { ReservationService } from '../doamin/reservation.service';
-import { WriteReservationCriteria } from './criteria';
 import {
+  BookingSeatEvent,
   PerformanceEventListener,
   PerformanceService,
   ReserveSeatEvent,
 } from 'src/domain/concert/performance';
-import { WriteReservationCommand } from '../doamin';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ExpireQueueEvent, QueueEventListener } from 'src/domain/queue';
+import { UserService } from 'src/domain/user';
+import { WriteReservationCriteria } from './criteria';
+import { ReservationService, WriteReservationCommand } from '../doamin';
 
 @Injectable()
 export class ReservationFacade {
@@ -26,7 +26,7 @@ export class ReservationFacade {
 
     const seat = await this.performanceService.getReserveSeat(criteria.userId);
 
-    const reservationId = await this.reservationService.reserve(
+    const reservation = await this.reservationService.reserve(
       WriteReservationCommand.from({
         userId: criteria.userId,
         performanceId: criteria.performanceId,
@@ -35,7 +35,7 @@ export class ReservationFacade {
       }),
     );
 
-    // 좌석 변경 이벤트
+    // 좌석 임시 예약 이벤트
     this.eventEmitter.emit(
       PerformanceEventListener.RESERVE_SEAT_EVENT,
       ReserveSeatEvent.from({ seatId: seat.id }),
@@ -46,6 +46,17 @@ export class ReservationFacade {
       QueueEventListener.EXPIRE,
       ExpireQueueEvent.from({ queueUid: criteria.queueUid }),
     );
-    return reservationId;
+    return reservation.id;
+  }
+
+  async confirm(reservationId: number) {
+    const reservation = await this.reservationService.confirm(reservationId);
+
+    // 좌석 예약 확정 이벤트
+    this.eventEmitter.emit(
+      PerformanceEventListener.BOOKING_SEAT_EVENT,
+      BookingSeatEvent.from({ seatId: reservation.seatId }),
+    );
+    return reservation.id;
   }
 }

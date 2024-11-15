@@ -7,13 +7,14 @@ import {
   OnCustomEvent,
   OnErrorEvent,
 } from 'src/global';
-import { ReserveSeatEvent } from './event';
+import { BookingSeatEvent, ReserveSeatEvent } from './event';
 import { PerformanceFacade } from '../application';
 
 @Injectable()
 export class PerformanceEventListener extends BaseEventListener {
   static readonly EVENT_GROUP = 'perfromance';
   static readonly RESERVE_SEAT_EVENT = 'perfromance.reserveSeat';
+  static readonly BOOKING_SEAT_EVENT = 'perfromance.bookingSeat';
 
   constructor(
     private readonly logger: CustomLoggerService,
@@ -25,7 +26,7 @@ export class PerformanceEventListener extends BaseEventListener {
   }
 
   /**
-   * 좌석 예약 상태 변경 이벤트
+   * 좌석 임시예약
    * @param event
    */
   @OnCustomEvent(PerformanceEventListener.RESERVE_SEAT_EVENT, { async: true })
@@ -34,6 +35,18 @@ export class PerformanceEventListener extends BaseEventListener {
       `On Handle Event - ${PerformanceEventListener.RESERVE_SEAT_EVENT}`,
     );
     await this.performanceFacade.reserveSeat(event.seatId);
+  }
+
+  /**
+   * 좌석 예약확정
+   * @param event
+   */
+  @OnCustomEvent(PerformanceEventListener.BOOKING_SEAT_EVENT, { async: true })
+  async handleBookingSeat(event: BookingSeatEvent) {
+    this.logger.debug(
+      `On Handle Event - ${PerformanceEventListener.BOOKING_SEAT_EVENT}`,
+    );
+    await this.performanceFacade.bookingSeat(event.seatId);
   }
 
   @OnErrorEvent(PerformanceEventListener.EVENT_GROUP)

@@ -3,6 +3,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CacheModule } from '@nestjs/cache-manager';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import Redis from 'ioredis';
 
 import { AppController } from './app.controller';
@@ -29,6 +30,7 @@ const clientRedis = new Redis({ db: 1 });
       isGlobal: true,
     }),
     ScheduleModule.forRoot(),
+    EventEmitterModule.forRoot(),
 
     /* custom module */
     CustomLoggerModule.forRoot(),

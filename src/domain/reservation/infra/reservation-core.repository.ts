@@ -3,12 +3,12 @@ import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager } from 'typeorm';
 
 import { ResourceNotFoundException } from 'src/common';
+import { ReservationEntity, ReservationStatus } from '../doamin';
 import {
   FindByOptions,
-  InsertReservationParam,
   ReservationRepository,
+  SaveReservationParam,
 } from './reservation.repository';
-import { ReservationEntity, ReservationStatus } from '../doamin';
 
 @Injectable()
 export class ReservationCoreRepository extends ReservationRepository {
@@ -30,12 +30,12 @@ export class ReservationCoreRepository extends ReservationRepository {
     return reservation;
   }
 
-  override async insertOne(param: InsertReservationParam): Promise<number> {
-    const { raw } = await this.insert({
-      ...param,
-      status: ReservationStatus.REQUEST,
-    });
-    return raw.insertId;
+  override async saveReservation(
+    param: SaveReservationParam,
+  ): Promise<ReservationEntity> {
+    const reservation = this.create(param);
+    await this.save(reservation);
+    return reservation;
   }
 
   override async updateReservationStatus(
