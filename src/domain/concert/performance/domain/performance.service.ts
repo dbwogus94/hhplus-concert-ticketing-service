@@ -43,38 +43,24 @@ export class PerformanceService {
     return GetSeatsInfo.of(seat);
   }
 
-  reserveSeat(seatId: number): (manager?: EntityManager) => Promise<void> {
-    return async (manager: EntityManager = this.manager) => {
-      return await manager.transaction(async (txManager) => {
-        const txPerformanceRepo =
-          this.performanceRepo.createTransactionRepo(txManager);
-
-        const seat = await txPerformanceRepo.getSeatByPk(seatId);
-        seat.reserve();
-
-        await txPerformanceRepo.updateSeatStatus(
-          seat.id,
-          seat.status,
-          seat.version,
-        );
-      });
-    };
+  async reserveSeat(seatId: number): Promise<void> {
+    const seat = await this.performanceRepo.getSeatByPk(seatId);
+    seat.reserve();
+    await this.performanceRepo.updateSeatStatus(
+      seat.id,
+      seat.status,
+      seat.version,
+    );
   }
 
-  bookingSeat(seatId: number): (manager?: EntityManager) => Promise<void> {
-    return async (manager: EntityManager = this.manager) => {
-      await manager.transaction(async (txManager) => {
-        const txPerformanceRepo =
-          this.performanceRepo.createTransactionRepo(txManager);
-        const seat = await txPerformanceRepo.getSeatByPk(seatId);
-        seat.booking();
+  async bookingSeat(seatId: number): Promise<void> {
+    const seat = await this.performanceRepo.getSeatByPk(seatId);
+    seat.booking();
 
-        await txPerformanceRepo.updateSeatStatus(
-          seat.id,
-          seat.status,
-          seat.version,
-        );
-      });
-    };
+    await this.performanceRepo.updateSeatStatus(
+      seat.id,
+      seat.status,
+      seat.version,
+    );
   }
 }
