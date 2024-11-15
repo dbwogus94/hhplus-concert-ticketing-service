@@ -1,5 +1,5 @@
 import { BaseRepository } from 'src/common';
-import { ReservationEntity, ReservationStatus } from '../domain';
+import { ReservationEntity, ReservationStatus } from '../doamin';
 
 export type InsertReservationParam = Pick<
   ReservationEntity,

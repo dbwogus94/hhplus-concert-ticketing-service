@@ -2,13 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager } from 'typeorm';
 
-import { ReservationEntity, ReservationStatus } from '../domain';
+import { ResourceNotFoundException } from 'src/common';
 import {
   FindByOptions,
   InsertReservationParam,
   ReservationRepository,
 } from './reservation.repository';
-import { ResourceNotFoundException } from 'src/common';
+import { ReservationEntity, ReservationStatus } from '../doamin';
 
 @Injectable()
 export class ReservationCoreRepository extends ReservationRepository {
