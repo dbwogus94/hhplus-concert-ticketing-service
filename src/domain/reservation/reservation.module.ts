@@ -19,5 +19,6 @@ import { ReservationCoreRepository, ReservationRepository } from './infra';
       useClass: ReservationCoreRepository,
     },
   ],
+  exports: [ReservationService],
 })
 export class ReservationModule {}

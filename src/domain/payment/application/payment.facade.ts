@@ -1,19 +1,25 @@
 import { Injectable } from '@nestjs/common';
-import { PerformanceService } from 'src/domain/concert/performance';
-import { UserService, WriteUserPointCommand } from 'src/domain/user';
-import { GetPaymentInfo, WritePaymentCommand } from '../doamin';
-import { PaymentService } from '../doamin/payment.service';
-import { WritePaymentCriteria } from './dto';
-import { EntityManager } from 'typeorm';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectEntityManager } from '@nestjs/typeorm';
+import { EntityManager } from 'typeorm';
+
+import {
+  ConfirmReservationEvent,
+  ReservationEventListener,
+  ReservationService,
+} from 'src/domain/reservation';
+import { UserService, WriteUserPointCommand } from 'src/domain/user';
+import { GetPaymentInfo, PaymentService, WritePaymentCommand } from '../doamin';
+import { WritePaymentCriteria } from './dto';
 
 @Injectable()
 export class PaymentFacade {
   constructor(
     private readonly paymentService: PaymentService,
-    private readonly performanceService: PerformanceService,
     private readonly userService: UserService,
+    private readonly reservationService: ReservationService,
     @InjectEntityManager() private readonly manager: EntityManager,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async payment(criteria: WritePaymentCriteria): Promise<GetPaymentInfo> {
@@ -21,7 +27,7 @@ export class PaymentFacade {
 
     return await this.manager.transaction(async (txManager) => {
       // 예약 확인
-      const reservation = await this.performanceService.getSeatReservation(
+      const reservation = await this.reservationService.getReservation(
         reservationId,
         userId,
       )(txManager);
@@ -35,9 +41,6 @@ export class PaymentFacade {
         }),
       )(txManager);
 
-      // 좌석 상태 변경과 예약 확정
-      await this.performanceService.bookingSeat(reservation.seatId)(txManager);
-
       // 결제 생성
       const paymentInfo = await this.paymentService.payment(
         WritePaymentCommand.from({
@@ -46,6 +49,13 @@ export class PaymentFacade {
           payPrice,
         }),
       )(txManager);
+
+      // 예약 확정 이벤트
+      this.eventEmitter.emit(
+        ReservationEventListener.CONFIRM_EVENT,
+        ConfirmReservationEvent.from({ reservationId }),
+      );
+
       return paymentInfo;
     });
   }
