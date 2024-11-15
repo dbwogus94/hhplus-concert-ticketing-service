@@ -1,16 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
-import { ConflictStatusException } from 'src/common';
+import { ConflictStatusException, ResourceNotFoundException } from 'src/common';
+import { Cache } from 'src/global';
 import { EntityManager } from 'typeorm';
 import { PerformanceRepository, ReservationRepository } from '../infra';
-import {
-  GetPerformancesInfo,
-  GetReservationInfo,
-  GetSeatsInfo,
-  WriteReservationCommand,
-} from './dto';
+import { GetPerformancesInfo, GetReservationInfo, GetSeatsInfo } from './dto';
 import { SeatStatus } from './model';
-import { Cache } from 'src/global';
 
 @Injectable()
 export class PerformanceService {
@@ -41,17 +36,20 @@ export class PerformanceService {
     return GetSeatsInfo.of(seat);
   }
 
-  reserveSeat(
-    command: WriteReservationCommand,
-  ): (manager?: EntityManager) => Promise<number> {
+  async getReserveSeat(performanceId: number): Promise<GetSeatsInfo> {
+    const seat = await this.performanceRepo.getSeatByPk(performanceId);
+    if (seat.isBookComplete)
+      throw new ResourceNotFoundException('임시예약 상태의 좌석이 아닙니다.');
+    return GetSeatsInfo.of(seat);
+  }
+
+  reserveSeat(seatId: number): (manager?: EntityManager) => Promise<void> {
     return async (manager: EntityManager = this.manager) => {
       return await manager.transaction(async (txManager) => {
         const txPerformanceRepo =
           this.performanceRepo.createTransactionRepo(txManager);
-        const txReservationRepo =
-          this.reservationRepo.createTransactionRepo(txManager);
 
-        const seat = await txPerformanceRepo.getSeatByPk(command.seatId);
+        const seat = await txPerformanceRepo.getSeatByPk(seatId);
         seat.reserve();
 
         await txPerformanceRepo.updateSeatStatus(
@@ -59,13 +57,6 @@ export class PerformanceService {
           seat.status,
           seat.version,
         );
-
-        const reservationId = await txReservationRepo.insertOne({
-          seatId: command.seatId,
-          userId: command.userId,
-          price: seat.amount,
-        });
-        return reservationId;
       });
     };
   }
