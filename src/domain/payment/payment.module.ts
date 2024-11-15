@@ -1,13 +1,14 @@
 import { Module } from '@nestjs/common';
-import { PaymentController } from './presentation/payment.controller';
-import { PaymentService } from './doamin/payment.service';
-import { PaymentFacade } from './application';
-import { PaymentCoreRepository, PaymentRepository } from './infra';
-import { PerformanceModule } from '../concert/performance';
+
 import { UserModule } from '../user';
+import { ReservationModule } from '../reservation';
+import { PaymentController } from './presentation';
+import { PaymentFacade } from './application';
+import { PaymentService } from './doamin';
+import { PaymentCoreRepository, PaymentRepository } from './infra';
 
 @Module({
-  imports: [PerformanceModule, UserModule],
+  imports: [UserModule, ReservationModule],
   controllers: [PaymentController],
   providers: [
     PaymentFacade,

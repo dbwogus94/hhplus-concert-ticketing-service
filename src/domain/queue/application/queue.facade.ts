@@ -39,4 +39,8 @@ export class QueueFacade {
   async changeQueueActiveStatus(activeCount: number): Promise<void> {
     await this.queueService.batchDeWaitQueuesAndInActiveQueue(activeCount);
   }
+
+  async expireActiveQueue(queueUid: string) {
+    await this.queueService.expireActiveQueue(queueUid);
+  }
 }

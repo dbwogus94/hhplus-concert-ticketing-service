@@ -1,22 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
-import { ConflictStatusException } from 'src/common';
 import { EntityManager } from 'typeorm';
-import { PerformanceRepository, ReservationRepository } from '../infra';
-import {
-  GetPerformancesInfo,
-  GetReservationInfo,
-  GetSeatsInfo,
-  WriteReservationCommand,
-} from './dto';
-import { SeatStatus } from './model';
+
+import { ResourceNotFoundException } from 'src/common';
 import { Cache } from 'src/global';
+import { PerformanceRepository } from '../infra';
+import { GetPerformancesInfo, GetSeatsInfo } from './dto';
+import { SeatStatus } from './model';
 
 @Injectable()
 export class PerformanceService {
   constructor(
     private readonly performanceRepo: PerformanceRepository,
-    private readonly reservationRepo: ReservationRepository,
     @InjectEntityManager() private readonly manager: EntityManager,
   ) {}
 
@@ -41,80 +36,31 @@ export class PerformanceService {
     return GetSeatsInfo.of(seat);
   }
 
-  reserveSeat(
-    command: WriteReservationCommand,
-  ): (manager?: EntityManager) => Promise<number> {
-    return async (manager: EntityManager = this.manager) => {
-      return await manager.transaction(async (txManager) => {
-        const txPerformanceRepo =
-          this.performanceRepo.createTransactionRepo(txManager);
-        const txReservationRepo =
-          this.reservationRepo.createTransactionRepo(txManager);
-
-        const seat = await txPerformanceRepo.getSeatByPk(command.seatId);
-        seat.reserve();
-
-        await txPerformanceRepo.updateSeatStatus(
-          seat.id,
-          seat.status,
-          seat.version,
-        );
-
-        const reservationId = await txReservationRepo.insertOne({
-          seatId: command.seatId,
-          userId: command.userId,
-          price: seat.amount,
-        });
-        return reservationId;
-      });
-    };
+  async getReserveSeat(performanceId: number): Promise<GetSeatsInfo> {
+    const seat = await this.performanceRepo.getSeatByPk(performanceId);
+    if (seat.isBookComplete)
+      throw new ResourceNotFoundException('임시예약 상태의 좌석이 아닙니다.');
+    return GetSeatsInfo.of(seat);
   }
 
-  getSeatReservation(
-    reservationId: number,
-    userId: number,
-  ): (manager?: EntityManager) => Promise<GetReservationInfo> {
-    return async (manager: EntityManager = null) => {
-      const txReservationRepo = manager
-        ? this.reservationRepo.createTransactionRepo(manager)
-        : this.reservationRepo;
-
-      const reservation = await txReservationRepo.getReservationBy({
-        id: reservationId,
-        userId,
-      });
-      if (!reservation.isRequest)
-        throw new ConflictStatusException('"예약신청" 상태가 아닙니다.');
-      return GetReservationInfo.of(reservation);
-    };
+  async reserveSeat(seatId: number): Promise<void> {
+    const seat = await this.performanceRepo.getSeatByPk(seatId);
+    seat.reserve();
+    await this.performanceRepo.updateSeatStatus(
+      seat.id,
+      seat.status,
+      seat.version,
+    );
   }
 
-  bookingSeat(seatId: number): (manager?: EntityManager) => Promise<void> {
-    return async (manager: EntityManager = this.manager) => {
-      await manager.transaction(async (txManager) => {
-        const txPerformanceRepo =
-          this.performanceRepo.createTransactionRepo(txManager);
-        const txReservationRepo =
-          this.reservationRepo.createTransactionRepo(txManager);
+  async bookingSeat(seatId: number): Promise<void> {
+    const seat = await this.performanceRepo.getSeatByPk(seatId);
+    seat.booking();
 
-        const seat = await txPerformanceRepo.getSeatByPk(seatId);
-        seat.booking();
-
-        await txPerformanceRepo.updateSeatStatus(
-          seat.id,
-          seat.status,
-          seat.version,
-        );
-
-        const reservation = await txReservationRepo.getReservationBy({
-          seatId,
-        });
-        reservation.confirm();
-        await txReservationRepo.updateReservationStatus(
-          reservation.id,
-          reservation.status,
-        );
-      });
-    };
+    await this.performanceRepo.updateSeatStatus(
+      seat.id,
+      seat.status,
+      seat.version,
+    );
   }
 }

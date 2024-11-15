@@ -1,6 +1,5 @@
 import { applyDecorators } from '@nestjs/common';
 import {
-  ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
   ApiSecurity,
@@ -11,7 +10,6 @@ import { PerformanceController } from '../performance.controller';
 import {
   GetPerformancesWithTotolCountResponse,
   GetSeatsWithTotolCountResponse,
-  PostSeatReservationResponse,
 } from '../dto';
 import { SERVICE_ACCESS_TOKEN } from 'src/common';
 
@@ -38,19 +36,6 @@ const decorators: Record<API_DOC_TYPE, Function> = {
       ApiOkResponse({
         description: '공연 좌석 리스트 조회',
         type: GetSeatsWithTotolCountResponse,
-      }),
-      ApiUnauthorizedResponse({
-        description: '인증 에러',
-      }),
-    ),
-
-  postSeatReservation: () =>
-    applyDecorators(
-      ApiSecurity(SERVICE_ACCESS_TOKEN),
-      ApiOperation({ summary: '좌석 예약 신청' }),
-      ApiCreatedResponse({
-        description: '좌석 예약 신청',
-        type: PostSeatReservationResponse,
       }),
       ApiUnauthorizedResponse({
         description: '인증 에러',
