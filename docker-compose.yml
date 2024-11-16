@@ -1,0 +1,140 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:6.2.6-alpine
+    container_name: redis
+    ports: # 바인딩할 포트:내부 포트
+      - 6379:6379
+    environment:
+      - REDIS_ARGS=--save 60 1000 --appendonly yes # 데이터 지속성을 위한 설정
+      # - REDISTIMESERIES_ARGS=RETENTION_POLICY=20 # 시계열 데이터 보존 정책
+    volumes: # 마운트할 볼륨 설정
+      - ./docker-volumes/redis:/data
+      - ./docker-volumes/redis/conf.d/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+
+    networks:
+      - db_net
+    restart: always
+
+  # service-1
+  mysql:
+    image: mysql:8.0.17
+    platform: linux/amd64
+    container_name: mysql
+    # 접근 포트 (컨테이너 외부: 컨테이너 내부)
+    ports:
+      - 13306:3306
+    environment:
+      - MYSQL_DATABASE=mysql
+      - MYSQL_ROOT_PASSWORD=root1234
+      - MYSQL_USER=tester # 새로운 사용
+      - MYSQL_PASSWORD=tester1234 # 새로운 사용자의 비밀번호
+      - MYSQL_ALLOW_EMPTY_PASSWORD=no
+      - MYSQL_RANDOM_ROOT_PASSWORD=no
+    # command:
+    #   - --ssl=0
+    #   - --require_secure_transport=OFF
+    volumes:
+      # 설정 디렉토리 전체를 사용
+      - ./docker-volumes/mysql/conf.d/my.cnf:/etc/mysql/conf.d/my.cnf
+      # 초기화 SQL 스크립트 위치
+      - ./docker-volumes/mysql/init:/docker-entrypoint-initdb.d
+      # 컨테이너의 데이터 로컬로 마운트
+      - ./docker-volumes/mysql/data:/var/lib/mysql
+    networks:
+      - db_net
+    restart: always
+
+  kafka-0:
+    image: bitnami/kafka:3.7
+    ports:
+      - '9094:9094'
+    environment:
+      # KRaft 설정
+      KAFKA_KRAFT_CLUSTER_ID: z6sXmGHyR1qVTyyl9XXr0g
+      KAFKA_CFG_PROCESS_ROLES: controller,broker
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@kafka-0:9093
+      KAFKA_CFG_NODE_ID: 0
+
+      # 리스너 설정
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://:9092,EXTERNAL://localhost:9094
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+
+      # 클러스터 설정
+      KAFKA_CFG_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_CFG_MIN_INSYNC_REPLICAS: 1
+      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    volumes:
+      - ./docker-volumes/kafka:/bitnami
+    networks:
+      - kafka-network
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - '9091:8080'
+    depends_on:
+      - kafka-0
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=KRaft Cluster
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka-0:9092
+      - DYNAMIC_CONFIG_ENABLED=true
+    networks:
+      - kafka-network
+
+  # kafdrop:
+  #   image: obsidiandynamics/kafdrop:latest
+  #   platform: linux/amd64
+  #   ports:
+  #     - '9090:9000'
+  #   depends_on:
+  #     - kafka-0
+  #   environment:
+  #     - KAFKA_BROKERCONNECT=kafka-0:9092
+  #     - JVM_OPTS=-Xms32M -Xmx64M
+  #     - SERVER_SERVLET_CONTEXTPATH=/
+  #   networks:
+  #     - kafka-network
+
+  # influxdb:
+  #   image: influxdb:1.8-alpine
+  #   platform: linux/amd64
+  #   container_name: influxdb
+  #   ports:
+  #     - '8086:8086'
+  #   environment:
+  #     - INFLUXDB_DB=k6
+  #     - INFLUXDB_HTTP_BIND_ADDRESS=:8086
+  #   volumes:
+  #     - ./docker-volumes/influxdb:/var/lib/influxdb
+  #   networks:
+  #     - k6_load_test
+
+  # grafana:
+  #   image: grafana/grafana
+  #   platform: linux/amd64
+  #   container_name: grafana
+  #   depends_on:
+  #     - influxdb
+  #   ports:
+  #     - '4000:4000'
+  #   environment:
+  #     - GF_SECURITY_ADMIN_PASSWORD=admin # 기본 로그인 정보 설정
+  #     - GF_SECURITY_ADMIN_USER=admin
+  #   volumes:
+  #     - ./docker-volumes/grafana:/var/lib/grafana
+  #   networks:
+  #     - k6_load_test
+
+networks:
+  db_net:
+    driver: bridge
+  kafka-network:
+    driver: bridge
