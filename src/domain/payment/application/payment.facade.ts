@@ -5,7 +5,12 @@ import { EntityManager } from 'typeorm';
 
 import { ReservationService } from 'src/domain/reservation';
 import { UserService, WriteUserPointCommand } from 'src/domain/user';
-import { GetPaymentInfo, PaymentService, WritePaymentCommand } from '../doamin';
+import {
+  GetPaymentInfo,
+  PaymentService,
+  WriteOutboxCommand,
+  WritePaymentCommand,
+} from '../doamin';
 import { PaymentEventListener, PayPaymentSyncEvent } from '../presentation';
 import { WritePaymentCriteria } from './dto';
 
@@ -63,5 +68,9 @@ export class PaymentFacade {
 
       return paymentInfo;
     });
+  }
+
+  async createOutbox(command: WriteOutboxCommand) {
+    return this.paymentService.createOutbox(command);
   }
 }

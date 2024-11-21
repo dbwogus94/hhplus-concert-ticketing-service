@@ -9,6 +9,7 @@ import {
 } from 'src/global';
 import { PaymentFacade } from '../../application';
 import { PayPaymentSyncEvent } from './dto';
+import { WriteOutboxCommand } from '../../doamin';
 
 @Injectable()
 export class PaymentEventListener extends BaseEventListener {
@@ -27,7 +28,13 @@ export class PaymentEventListener extends BaseEventListener {
   @OnSyncEvent(PaymentEventListener.PAY_EVENT)
   async handlePayPayment(event: PayPaymentSyncEvent) {
     this.logger.debug(`On Handle Event - ${PaymentEventListener.PAY_EVENT}`);
-    // 아웃 박스 구현 예정
+    this.paymentFacade.createOutbox(
+      WriteOutboxCommand.from({
+        transactionId: event.paymentId,
+        payload: event.payload,
+        topic: PaymentEventListener.PAY_EVENT,
+      }),
+    );
   }
 
   @OnCustomEventErrorHandler(PaymentEventListener.EVENT_GROUP)
