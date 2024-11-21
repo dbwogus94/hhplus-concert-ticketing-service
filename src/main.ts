@@ -9,6 +9,7 @@ import {
 } from './common';
 import { AppModule } from './app.module';
 import { httpLogger } from './common/middleware/http-logger.middleware';
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 
 const DEFALUT_APP_NAME = 'hhplus-concert';
 
@@ -32,6 +33,16 @@ async function bootstrap() {
   app.use(httpLogger(app.get(Logger)));
   setupSwagger(app);
 
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.KAFKA,
+    options: {
+      client: {
+        brokers: ['localhost:9094'],
+      },
+    },
+  });
+
+  await app.startAllMicroservices();
   await app.listen(3000);
 }
 bootstrap();

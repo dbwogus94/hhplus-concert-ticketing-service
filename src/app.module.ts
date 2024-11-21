@@ -4,6 +4,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CacheModule } from '@nestjs/cache-manager';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 import Redis from 'ioredis';
 
 import { AppController } from './app.controller';
@@ -12,6 +13,7 @@ import {
   ConvertExceptionInterceptor,
   ConvertResponseInterceptor,
   getTypeOrmModuleAsyncOptions,
+  KAFKA_CLIENT_NAME,
   RedisCacheStore,
 } from './common';
 import { DomainModule } from './domain';
@@ -31,6 +33,31 @@ const clientRedis = new Redis({ db: 1 });
     }),
     ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),
+    ClientsModule.register({
+      isGlobal: true,
+      clients: [
+        {
+          name: KAFKA_CLIENT_NAME,
+          transport: Transport.KAFKA,
+          options: {
+            client: {
+              clientId: 'concert',
+              brokers: ['localhost:9094'],
+              retry: {
+                retries: 2,
+              },
+            },
+            consumer: {
+              allowAutoTopicCreation: true,
+              groupId: 'concert-consumer',
+              retry: {
+                retries: 2,
+              },
+            },
+          },
+        },
+      ],
+    }),
 
     /* custom module */
     CustomLoggerModule.forRoot(),
