@@ -5,6 +5,11 @@ import { RedisType } from 'src/common';
 export class StubRedis implements RedisType {
   private storage: Map<RedisKey, any> = new Map();
 
+  quit(callback?: Callback<'OK'>): Promise<'OK'> {
+    this.storage = new Map();
+    return Promise.resolve('OK');
+  }
+
   async get(key: string, callback?: Callback<string | null>): Promise<string> {
     return this.storage.get(key);
   }

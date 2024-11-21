@@ -18,12 +18,15 @@ export class ReservationEntity extends BaseEntity {
   status: ReservationStatus;
 
   /* ================================ Domain Method ================================ */
-  /**
-   * 예약 상태인지 확인
-   * @returns {boolean} 예약 가능 여부
-   */
+
+  /** 예약신청 상태인지 확인 */
   get isRequest(): boolean {
     return this.status === ReservationStatus.REQUEST;
+  }
+
+  /** 예약확정 상태인지 확인 */
+  get isConfirm(): boolean {
+    return this.status === ReservationStatus.CONFIRM;
   }
 
   confirm(): this {

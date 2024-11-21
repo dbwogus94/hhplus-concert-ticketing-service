@@ -2,7 +2,7 @@ import { Body, Controller, HttpCode, Post, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { GetUserInfoDecorator } from 'src/common';
 import { QueueGuard } from 'src/domain/queue';
-import { ReservationFacade, WriteReservationCriteria } from '../application';
+import { ReservationFacade, WriteReservationCriteria } from '../../application';
 import { DocumentHelper } from './document';
 import { PostReservationRequest, PostReservationResponse } from './dto';
 
@@ -18,14 +18,12 @@ export class ReservationController {
   async postReservation(
     @Body() body: PostReservationRequest,
     @GetUserInfoDecorator('userId') userId: number,
-    @GetUserInfoDecorator('queueUid') queueUid: string,
   ): Promise<PostReservationResponse> {
     const reservationId = await this.reservationFacade.reserve(
       WriteReservationCriteria.from({
         userId,
         performanceId: body.performanceId,
         seatId: body.seatId,
-        queueUid,
       }),
     );
     return PostReservationResponse.of({ reservationId });

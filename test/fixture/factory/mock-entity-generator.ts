@@ -1,12 +1,10 @@
 import { faker } from '@faker-js/faker';
 import {
   PerformanceEntity,
-  ReservationEntity,
-  ReservationStatus,
   SeatEntity,
   SeatStatus,
 } from 'src/domain/concert/performance';
-import { QueueEntity, QueueStatus } from 'src/domain/queue';
+import { ReservationEntity, ReservationStatus } from 'src/domain/reservation';
 import { PointEntity, UserEntity } from 'src/domain/user';
 
 export class MockEntityGenerator {
@@ -59,25 +57,25 @@ export class MockEntityGenerator {
     return point;
   }
 
-  static generateQueue(param: {
-    id: number;
-    uid?: string;
-    userId?: number;
-    concertId?: number;
-  }) {
-    const queue = new QueueEntity();
-    queue.id = param.id;
-    queue.uid = param.uid ?? QueueEntity.generateUUIDv4();
-    queue.createdAt = new Date();
-    queue.updatedAt = new Date();
-    queue.status = QueueStatus.WAIT;
-    queue.userId = param.userId ?? 1;
-    queue.concertId = param.concertId ?? 1;
-    queue.activedAt = null;
-    queue.activeExpireAt = null;
-    queue.activeFirstAccessAt = null;
-    return queue;
-  }
+  // static generateQueue(param: {
+  //   id: number;
+  //   uid?: string;
+  //   userId?: number;
+  //   concertId?: number;
+  // }) {
+  //   const queue = new QueueEntity();
+  //   queue.id = param.id;
+  //   queue.uid = param.uid ?? QueueEntity.generateUUIDv4();
+  //   queue.createdAt = new Date();
+  //   queue.updatedAt = new Date();
+  //   queue.status = QueueStatus.WAIT;
+  //   queue.userId = param.userId ?? 1;
+  //   queue.concertId = param.concertId ?? 1;
+  //   queue.activedAt = null;
+  //   queue.activeExpireAt = null;
+  //   queue.activeFirstAccessAt = null;
+  //   return queue;
+  // }
 
   static generateReservation(param: {
     id: number;

@@ -48,9 +48,13 @@ export class ActiveQueueCoreRedis extends ActiveQueueRedis {
       queueUid: queue.uid,
     });
 
-    await this.redisClient.setEX(activetkey, JSON.stringify(queue), {
-      ttlSeconds: ActiveQueueDomain.MAX_ACTIVE_MINUTE,
-    });
+    await this.redisClient.setEX(
+      activetkey,
+      JSON.stringify(queue.toLiteral()),
+      {
+        ttlSeconds: ActiveQueueDomain.MAX_ACTIVE_MINUTE,
+      },
+    );
   }
 
   override async deActiveQueue(

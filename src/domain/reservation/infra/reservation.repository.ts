@@ -12,6 +12,10 @@ export type FindByOptions = Pick<
 >;
 
 export abstract class ReservationRepository extends BaseRepository<ReservationEntity> {
+  abstract findReservationBy(
+    options: FindByOptions,
+  ): Promise<ReservationEntity>;
+
   abstract getReservationBy(options: FindByOptions): Promise<ReservationEntity>;
   abstract saveReservation(
     param: SaveReservationParam,

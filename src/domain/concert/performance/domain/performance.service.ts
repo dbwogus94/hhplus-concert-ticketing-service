@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager } from 'typeorm';
 
-import { ResourceNotFoundException } from 'src/common';
+import { ConflictStatusException } from 'src/common';
 import { Cache } from 'src/global';
 import { PerformanceRepository } from '../infra';
 import { GetPerformancesInfo, GetSeatsInfo } from './dto';
@@ -36,10 +36,21 @@ export class PerformanceService {
     return GetSeatsInfo.of(seat);
   }
 
-  async getReserveSeat(performanceId: number): Promise<GetSeatsInfo> {
-    const seat = await this.performanceRepo.getSeatByPk(performanceId);
-    if (seat.isBookComplete)
-      throw new ResourceNotFoundException('임시예약 상태의 좌석이 아닙니다.');
+  async getAvailableSeat(seatId: number): Promise<GetSeatsInfo> {
+    const seat = await this.performanceRepo.getSeatByPk(seatId);
+    if (!seat.isReservable)
+      throw new ConflictStatusException(
+        '좌석이 임시예약이 불가능한 상태입니다.("예약가능" 상태의 좌석이 아닙니다.)',
+      );
+    return GetSeatsInfo.of(seat);
+  }
+
+  async getReserveSeat(seatId: number): Promise<GetSeatsInfo> {
+    const seat = await this.performanceRepo.getSeatByPk(seatId);
+    if (!seat.isBookComplete)
+      throw new ConflictStatusException(
+        '좌석이 예약완료가 불가능한 상태입니다.("임시예약" 상태의 좌석이 아닙니다.)',
+      );
     return GetSeatsInfo.of(seat);
   }
 

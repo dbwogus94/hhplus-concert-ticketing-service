@@ -1,10 +1,6 @@
-import {
-  ReservationEntity,
-  ReservationStatus,
-  SeatEntity,
-  SeatStatus,
-} from 'src/domain/concert/performance';
+import { SeatEntity, SeatStatus } from 'src/domain/concert/performance';
 import { PaymentEntity } from 'src/domain/payment/doamin';
+import { ReservationEntity, ReservationStatus } from 'src/domain/reservation';
 import {
   PointEntity,
   PointHistoryEntity,

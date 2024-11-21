@@ -2,12 +2,9 @@ import { applyDecorators } from '@nestjs/common';
 import { OnEvent, OnEventType } from '@nestjs/event-emitter';
 import { OnEventOptions } from '@nestjs/event-emitter/dist/interfaces';
 
-import { ERROR_EVENT } from '../constant';
 import { BaseEventListener } from '../base-event-listener';
 
-function _OnEventWithErrorHandler(
-  errorEvent: string = ERROR_EVENT,
-): MethodDecorator {
+function _OnSyncCustomEventHandler(): MethodDecorator {
   return function (
     target: any,
     key: string | symbol,
@@ -29,19 +26,7 @@ function _OnEventWithErrorHandler(
     // method proxy
     const originalMethod = descriptor.value;
     descriptor.value = async function (...args: any[]) {
-      try {
-        await originalMethod.call(this, ...args);
-      } catch (err) {
-        const self = this as any;
-        const event = `${self.eventGroup}.${errorEvent}`;
-
-        const isErrorHandler = self.eventEmitter.listeners(event).length > 0;
-        if (isErrorHandler) {
-          self.eventEmitter.emit(event, err);
-        } else {
-          throw err;
-        }
-      }
+      await originalMethod.call(this, ...args);
     };
 
     metas.forEach(([k, v]) => Reflect.defineMetadata(k, v, descriptor.value));
@@ -51,15 +36,20 @@ function _OnEventWithErrorHandler(
 /**
  * @nestjs/event-emitter의 에러를 핸들링 하기 위한 MethodDecorator를 생성합니다.
  * - `@nestjs/event-emitter#OnEvent`를 내부적으로 사용합니다.
- * - `@OnCustomEventErrorHandler`를 사용해 에러를 헨들링 합니다.
+ * - 내부적으로 { async: false, suppressErrors: false }를 고정해 사용
+ * - 위 옵션은 이벤트를 동기로 동작시키고 처리중 에러가 발생시 emit을 호출한 로직으로 에러를 전파하게 한다.
  * @param event
- * @param options
+ * @param options `Omit<OnEventOptions, 'async' | 'suppressErrors'>`
  * @returns
- * - OnEventOptions#suppressErrors 옵션 사용 불가
  */
-export function OnCustomEvent(
+export function OnSyncEvent(
   event: OnEventType,
-  options: Omit<OnEventOptions, 'suppressErrors'> = void 0,
+  options: Omit<OnEventOptions, 'async' | 'suppressErrors'> = void 0,
 ) {
-  return applyDecorators(OnEvent(event, options), _OnEventWithErrorHandler());
+  // 동기로 동작 그리고 에러를 emit을 호출한 코드로 전파한다.
+  const syncOptions = { async: false, suppressErrors: false };
+  return applyDecorators(
+    OnEvent(event, { ...options, ...syncOptions }),
+    _OnSyncCustomEventHandler(),
+  );
 }

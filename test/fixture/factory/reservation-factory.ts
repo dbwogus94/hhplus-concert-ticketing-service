@@ -1,7 +1,4 @@
-import {
-  ReservationEntity,
-  ReservationStatus,
-} from 'src/domain/concert/performance';
+import { ReservationEntity, ReservationStatus } from 'src/domain/reservation';
 import { BaseEntityFactory } from './base-entity-factory';
 import { generateRandomInt } from './utils';
 

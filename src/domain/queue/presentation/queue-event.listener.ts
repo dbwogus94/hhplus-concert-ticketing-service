@@ -5,7 +5,7 @@ import {
   BaseEventListener,
   CustomLoggerService,
   OnCustomEvent,
-  OnErrorEvent,
+  OnCustomEventErrorHandler,
 } from 'src/global';
 import { ExpireQueueEvent } from './event';
 import { QueueFacade } from '../application';
@@ -34,7 +34,7 @@ export class QueueEventListener extends BaseEventListener {
     await this.queueFacade.expireActiveQueue(event.queueUid);
   }
 
-  @OnErrorEvent(QueueEventListener.EVENT_GROUP)
+  @OnCustomEventErrorHandler(QueueEventListener.EVENT_GROUP)
   override errorHandler(err: Error): void {
     this.logger.error(err);
   }

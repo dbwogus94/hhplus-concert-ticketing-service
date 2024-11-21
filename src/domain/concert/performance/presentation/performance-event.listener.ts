@@ -5,7 +5,7 @@ import {
   BaseEventListener,
   CustomLoggerService,
   OnCustomEvent,
-  OnErrorEvent,
+  OnCustomEventErrorHandler,
 } from 'src/global';
 import { BookingSeatEvent, ReserveSeatEvent } from './event';
 import { PerformanceFacade } from '../application';
@@ -49,7 +49,7 @@ export class PerformanceEventListener extends BaseEventListener {
     await this.performanceFacade.bookingSeat(event.seatId);
   }
 
-  @OnErrorEvent(PerformanceEventListener.EVENT_GROUP)
+  @OnCustomEventErrorHandler(PerformanceEventListener.EVENT_GROUP)
   override errorHandler(err: Error): void {
     this.logger.error(err);
   }
