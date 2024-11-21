@@ -2,7 +2,6 @@ type WriteReservationCriteriaProp = {
   readonly userId: number;
   readonly performanceId: number;
   readonly seatId: number;
-  readonly queueUid: string;
 };
 
 export class WriteReservationCriteria {
@@ -18,10 +17,6 @@ export class WriteReservationCriteria {
 
   get userId() {
     return this.prop.userId;
-  }
-
-  get queueUid() {
-    return this.prop.queueUid;
   }
 
   static from(prop: WriteReservationCriteriaProp) {

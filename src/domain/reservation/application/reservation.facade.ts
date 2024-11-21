@@ -5,12 +5,14 @@ import {
   BookingSeatEvent,
   PerformanceEventListener,
   PerformanceService,
-  ReserveSeatEvent,
 } from 'src/domain/concert/performance';
-import { ExpireQueueEvent, QueueEventListener } from 'src/domain/queue';
 import { UserService } from 'src/domain/user';
-import { WriteReservationCriteria } from './criteria';
 import { ReservationService, WriteReservationCommand } from '../doamin';
+import {
+  RequestReservationSyncEvent,
+  ReservationEventListener,
+} from '../presentation';
+import { WriteReservationCriteria } from './criteria';
 
 @Injectable()
 export class ReservationFacade {
@@ -24,7 +26,9 @@ export class ReservationFacade {
   async reserve(criteria: WriteReservationCriteria) {
     await this.userService.getUser(criteria.userId);
 
-    const seat = await this.performanceService.getReserveSeat(criteria.userId);
+    const seat = await this.performanceService.getAvailableSeat(
+      criteria.userId,
+    );
 
     const reservation = await this.reservationService.reserve(
       WriteReservationCommand.from({
@@ -35,17 +39,25 @@ export class ReservationFacade {
       }),
     );
 
-    // 좌석 임시 예약 이벤트
     this.eventEmitter.emit(
-      PerformanceEventListener.RESERVE_SEAT_EVENT,
-      ReserveSeatEvent.from({ seatId: seat.id }),
+      ReservationEventListener.REQUEST_EVENT,
+      RequestReservationSyncEvent.from({
+        reservationId: reservation.id,
+        payload: JSON.stringify(reservation),
+      }),
     );
 
-    // 큐 만료 이벤트 발생
-    this.eventEmitter.emit(
-      QueueEventListener.EXPIRE,
-      ExpireQueueEvent.from({ queueUid: criteria.queueUid }),
-    );
+    // // 좌석 임시 예약 이벤트
+    // this.eventEmitter.emit(
+    //   PerformanceEventListener.RESERVE_SEAT_EVENT,
+    //   ReserveSeatEvent.from({ seatId: seat.id }),
+    // );
+
+    // // 큐 만료 이벤트 발생
+    // this.eventEmitter.emit(
+    //   QueueEventListener.EXPIRE,
+    //   ExpireQueueEvent.from({ queueUid: criteria.queueUid }),
+    // );
     return reservation.id;
   }
 

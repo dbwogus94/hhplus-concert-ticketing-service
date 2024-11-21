@@ -18,14 +18,12 @@ export class ReservationController {
   async postReservation(
     @Body() body: PostReservationRequest,
     @GetUserInfoDecorator('userId') userId: number,
-    @GetUserInfoDecorator('queueUid') queueUid: string,
   ): Promise<PostReservationResponse> {
     const reservationId = await this.reservationFacade.reserve(
       WriteReservationCriteria.from({
         userId,
         performanceId: body.performanceId,
         seatId: body.seatId,
-        queueUid,
       }),
     );
     return PostReservationResponse.of({ reservationId });
