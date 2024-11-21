@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 import {
   BaseEventListener,
@@ -9,6 +9,7 @@ import {
   OnSyncEvent,
 } from 'src/global';
 import { ReservationFacade } from '../../application';
+import { WriteOutboxCommand } from '../../doamin';
 import { ConfirmReservationEvent, RequestReservationSyncEvent } from './dto';
 
 // type Events = {
@@ -44,12 +45,17 @@ export class ReservationEventListener extends BaseEventListener {
   }
 
   @OnSyncEvent(ReservationEventListener.REQUEST_EVENT)
-  handleRequestReservation(event: RequestReservationSyncEvent) {
+  async handleRequestReservation(event: RequestReservationSyncEvent) {
     this.logger.debug(
       `On Handle Event - ${ReservationEventListener.REQUEST_EVENT}`,
     );
-    // 아웃 박스 구현 예정
-    // await this.reservationFacade.confirm(event.reservationId);
+    await this.reservationFacade.createOutbox(
+      WriteOutboxCommand.from({
+        transactionId: event.reservationId,
+        payload: event.payload,
+        topic: ReservationEventListener.REQUEST_EVENT,
+      }),
+    );
   }
 
   @OnCustomEventErrorHandler(ReservationEventListener.EVENT_GROUP)

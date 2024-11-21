@@ -3,8 +3,12 @@ import { EntityManager } from 'typeorm';
 
 import { ConflictStatusException } from 'src/common';
 import { ReservationStatus } from './model';
-import { GetReservationInfo, WriteReservationCommand } from './dto';
-import { ReservationRepository } from '../infra';
+import {
+  GetReservationInfo,
+  WriteOutboxCommand,
+  WriteReservationCommand,
+} from './dto';
+import { ReservationRepository } from './reservation.repository';
 
 @Injectable()
 export class ReservationService {
@@ -72,5 +76,14 @@ export class ReservationService {
         throw new ConflictStatusException('"예약신청" 상태가 아닙니다.');
       return GetReservationInfo.of(reservation);
     };
+  }
+
+  async createOutbox(command: WriteOutboxCommand): Promise<void> {
+    return this.reservationRepo.saveOutbox({
+      transactionId: command.transactionId,
+      topic: command.topic,
+      payload: command.payload,
+      isSent: false,
+    });
   }
 }

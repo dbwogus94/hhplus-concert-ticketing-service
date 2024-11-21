@@ -7,7 +7,11 @@ import {
   PerformanceService,
 } from 'src/domain/concert/performance';
 import { UserService } from 'src/domain/user';
-import { ReservationService, WriteReservationCommand } from '../doamin';
+import {
+  ReservationService,
+  WriteOutboxCommand,
+  WriteReservationCommand,
+} from '../doamin';
 import {
   RequestReservationSyncEvent,
   ReservationEventListener,
@@ -76,5 +80,9 @@ export class ReservationFacade {
       BookingSeatEvent.from({ seatId: reservation.seatId }),
     );
     return reservation.id;
+  }
+
+  async createOutbox(command: WriteOutboxCommand) {
+    return this.reservationService.createOutbox(command);
   }
 }
