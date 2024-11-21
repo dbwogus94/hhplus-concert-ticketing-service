@@ -55,10 +55,11 @@ function _OnEventWithErrorHandler(
  * @param event
  * @param options
  * @returns
+ * - OnEventOptions#suppressErrors 옵션 사용 불가
  */
 export function OnCustomEvent(
   event: OnEventType,
-  options: OnEventOptions = void 0,
+  options: Omit<OnEventOptions, 'suppressErrors'> = void 0,
 ) {
   return applyDecorators(OnEvent(event, options), _OnEventWithErrorHandler());
 }

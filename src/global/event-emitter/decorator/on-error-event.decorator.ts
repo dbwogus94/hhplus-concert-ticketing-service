@@ -41,7 +41,7 @@ function _OnErrorEvent(): MethodDecorator {
  * @param options
  * @returns
  */
-export function OnErrorEvent(
+export function OnCustomEventErrorHandler(
   eventGroup: string,
   options: OnEventOptions = void 0,
 ) {
