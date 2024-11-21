@@ -19,6 +19,12 @@ export class ReservationCoreRepository extends ReservationRepository {
     super(ReservationEntity, manager);
   }
 
+  override async findReservationBy(
+    options: FindByOptions,
+  ): Promise<ReservationEntity> {
+    return await this.findOneBy({ ...options });
+  }
+
   override async getReservationBy(
     options: FindByOptions = {},
   ): Promise<ReservationEntity> {

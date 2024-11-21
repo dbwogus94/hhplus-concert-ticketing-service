@@ -2,11 +2,8 @@ import { getDataSourceToken } from '@nestjs/typeorm';
 import { DataSource, EntityManager } from 'typeorm';
 
 import { ConflictStatusException, ResourceNotFoundException } from 'src/common';
-import {
-  PerformanceEntity,
-  ReservationEntity,
-  SeatEntity,
-} from 'src/domain/concert/performance';
+import { PerformanceEntity, SeatEntity } from 'src/domain/concert/performance';
+import { ReservationEntity } from 'src/domain/reservation';
 import {
   ReservationFacade,
   ReservationService,
@@ -46,13 +43,7 @@ describe('ReservationFacade 통합테스트', () => {
         // Given
         const user = UserFactory.create({ id: 1, pointId: 1 });
         const seat = SeatFactory.create({ id: 1, amount: 50_000 });
-        const reservation = ReservationFactory.create({
-          id: 1,
-          userId: user.id,
-          seatId: seat.id,
-          price: seat.amount,
-        });
-        const saveEntities = [user, seat, reservation];
+        const saveEntities = [user, seat];
         await Promise.all([saveEntities].map((e) => manager.save(e)));
 
         const criteria = WriteReservationCriteria.from({
@@ -72,7 +63,7 @@ describe('ReservationFacade 통합테스트', () => {
           status: ReservationStatus.REQUEST,
         });
 
-        // 좌석 상태가 'BOOKED'로 변경되었는지 확인
+        // 좌석 상태가 'BOOKED'로 변경되었는지 확인, 이벤트로 분리하며 확인이 불가능하다.
         // const reserveSeat = await performanceService.getReserveSeat(seat.id);
         // expect(reserveSeat.status).toBe(SeatStatus.RESERVED);
       });
@@ -83,13 +74,7 @@ describe('ReservationFacade 통합테스트', () => {
         // Given
         const notExistUser = UserFactory.create({ id: 1, pointId: 1 });
         const seat = SeatFactory.create({ id: 1, amount: 50_000 });
-        const reservation = ReservationFactory.create({
-          id: 1,
-          userId: notExistUser.id,
-          seatId: seat.id,
-          price: seat.amount,
-        });
-        const saveEntities = [seat, reservation];
+        const saveEntities = [seat];
         await Promise.all([saveEntities].map((e) => manager.save(e)));
 
         const criteria = WriteReservationCriteria.from({
@@ -107,13 +92,8 @@ describe('ReservationFacade 통합테스트', () => {
         // Given
         const user = UserFactory.create({ id: 1, pointId: 1 });
         const notExistSeat = SeatFactory.create({ id: 1, amount: 50_000 });
-        const reservation = ReservationFactory.create({
-          id: 1,
-          userId: user.id,
-          seatId: notExistSeat.id,
-          price: notExistSeat.amount,
-        });
-        const saveEntities = [user, reservation];
+
+        const saveEntities = [user];
         await Promise.all([saveEntities].map((e) => manager.save(e)));
 
         const criteria = WriteReservationCriteria.from({
@@ -132,6 +112,56 @@ describe('ReservationFacade 통합테스트', () => {
         const user = UserFactory.create({ id: 1, pointId: 1 });
         const seat = SeatFactory.createBooked({ id: 1, amount: 50_000 });
         const reservation = ReservationFactory.create({
+          id: 1,
+          userId: user.id,
+          seatId: seat.id,
+          price: seat.amount,
+        });
+        const saveEntities = [user, seat, reservation];
+        await Promise.all([saveEntities].map((e) => manager.save(e)));
+
+        const criteria = WriteReservationCriteria.from({
+          performanceId: seat.performanceId,
+          seatId: seat.id,
+          userId: user.id,
+        });
+
+        await expect(
+          reservationFacade.reserve(criteria),
+        ).rejects.toBeInstanceOf(ConflictStatusException);
+      });
+    });
+
+    describe('실패한다. - "좌석 상태가 동기화 되지 않은 경우를 가정"', () => {
+      it('선택한 좌석에 대한 예약이 존재하고, "예약신청" 상태라면 에러가 발생한다.', async () => {
+        // Given
+        const user = UserFactory.create({ id: 1, pointId: 1 });
+        const seat = SeatFactory.create({ id: 1, amount: 50_000 });
+        const reservation = ReservationFactory.create({
+          id: 1,
+          userId: user.id,
+          seatId: seat.id,
+          price: seat.amount,
+        });
+        const saveEntities = [user, seat, reservation];
+        await Promise.all([saveEntities].map((e) => manager.save(e)));
+
+        const criteria = WriteReservationCriteria.from({
+          performanceId: seat.performanceId,
+          seatId: seat.id,
+          userId: user.id,
+        });
+
+        await expect(
+          reservationFacade.reserve(criteria),
+        ).rejects.toBeInstanceOf(ConflictStatusException);
+      });
+
+      it('선택한 좌석에 대한 예약이 존재하고, "예약확정" 상태라면 에러가 발생한다.', async () => {
+        // Given
+        const user = UserFactory.create({ id: 1, pointId: 1 });
+        const seat = SeatFactory.create({ id: 1, amount: 50_000 });
+        const reservation = ReservationFactory.createConfirm({
           id: 1,
           userId: user.id,
           seatId: seat.id,

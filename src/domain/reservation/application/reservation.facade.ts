@@ -13,6 +13,8 @@ import {
   ReservationEventListener,
 } from '../presentation';
 import { WriteReservationCriteria } from './criteria';
+import { InjectEntityManager } from '@nestjs/typeorm';
+import { EntityManager } from 'typeorm';
 
 @Injectable()
 export class ReservationFacade {
@@ -20,6 +22,7 @@ export class ReservationFacade {
     private readonly reservationService: ReservationService,
     private readonly performanceService: PerformanceService,
     private readonly userService: UserService,
+    @InjectEntityManager() private readonly manager: EntityManager,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -27,25 +30,29 @@ export class ReservationFacade {
     await this.userService.getUser(criteria.userId);
 
     const seat = await this.performanceService.getAvailableSeat(
-      criteria.userId,
+      criteria.seatId,
     );
 
-    const reservation = await this.reservationService.reserve(
-      WriteReservationCommand.from({
-        userId: criteria.userId,
-        performanceId: criteria.performanceId,
-        seatId: criteria.seatId,
-        price: seat.amount,
-      }),
-    );
+    return await this.manager.transaction(async (txManager) => {
+      const reservation = await this.reservationService.reserve(
+        WriteReservationCommand.from({
+          userId: criteria.userId,
+          performanceId: criteria.performanceId,
+          seatId: criteria.seatId,
+          price: seat.amount,
+        }),
+      )(txManager);
 
-    this.eventEmitter.emit(
-      ReservationEventListener.REQUEST_EVENT,
-      RequestReservationSyncEvent.from({
-        reservationId: reservation.id,
-        payload: JSON.stringify(reservation),
-      }),
-    );
+      await this.eventEmitter.emitAsync(
+        ReservationEventListener.REQUEST_EVENT,
+        RequestReservationSyncEvent.from({
+          reservationId: reservation.id,
+          payload: JSON.stringify(reservation),
+        }),
+      );
+
+      return reservation.id;
+    });
 
     // // 좌석 임시 예약 이벤트
     // this.eventEmitter.emit(
@@ -58,7 +65,6 @@ export class ReservationFacade {
     //   QueueEventListener.EXPIRE,
     //   ExpireQueueEvent.from({ queueUid: criteria.queueUid }),
     // );
-    return reservation.id;
   }
 
   async confirm(reservationId: number) {

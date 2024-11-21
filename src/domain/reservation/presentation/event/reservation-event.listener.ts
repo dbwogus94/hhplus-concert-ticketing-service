@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 
 import {
   BaseEventListener,
   CustomLoggerService,
   OnCustomEvent,
-  OnErrorEvent,
+  OnCustomEventErrorHandler,
 } from 'src/global';
 import { ReservationFacade } from '../../application';
 import { ConfirmReservationEvent, RequestReservationSyncEvent } from './dto';
@@ -30,6 +30,10 @@ export class ReservationEventListener extends BaseEventListener {
     this.logger.setTarget(this.constructor.name);
   }
 
+  /**
+   * @param event
+   * @deprecated
+   */
   @OnCustomEvent(ReservationEventListener.CONFIRM_EVENT, { async: true })
   async handleReserveSeat(event: ConfirmReservationEvent) {
     this.logger.debug(
@@ -38,17 +42,24 @@ export class ReservationEventListener extends BaseEventListener {
     await this.reservationFacade.confirm(event.reservationId);
   }
 
-  @OnCustomEvent(ReservationEventListener.REQUEST_EVENT, { async: false })
-  async handleRequestReservation(event: RequestReservationSyncEvent) {
+  @OnEvent(ReservationEventListener.REQUEST_EVENT, {
+    async: false,
+    suppressErrors: false, // 에러 전파 허용
+  })
+  handleRequestReservation(event: RequestReservationSyncEvent) {
     this.logger.debug(
       `On Handle Event - ${ReservationEventListener.REQUEST_EVENT}`,
     );
+    console.log('헨들러 에러 발행');
+
+    // throw new Error('Event Handler Error');
     // 아웃 박스 구현 예정
     // await this.reservationFacade.confirm(event.reservationId);
   }
 
-  @OnErrorEvent(ReservationEventListener.EVENT_GROUP)
+  @OnCustomEventErrorHandler(ReservationEventListener.EVENT_GROUP)
   override errorHandler(err: Error): void {
     this.logger.error(err);
+    throw err;
   }
 }

@@ -10,14 +10,36 @@ import { ReservationRepository } from '../infra';
 export class ReservationService {
   constructor(private readonly reservationRepo: ReservationRepository) {}
 
-  async reserve(command: WriteReservationCommand): Promise<GetReservationInfo> {
-    const reservation = await this.reservationRepo.save({
-      seatId: command.seatId,
-      userId: command.userId,
-      price: command.price,
-      status: ReservationStatus.REQUEST,
-    });
-    return GetReservationInfo.of(reservation);
+  reserve(
+    command: WriteReservationCommand,
+  ): (manager?: EntityManager) => Promise<GetReservationInfo> {
+    return async (manager: EntityManager = null) => {
+      const txReservationRepo = manager
+        ? this.reservationRepo.createTransactionRepo(manager)
+        : this.reservationRepo;
+
+      const fountReservation = await this.reservationRepo.findReservationBy({
+        seatId: command.seatId,
+        userId: command.userId,
+      });
+
+      if (fountReservation?.isRequest)
+        throw new ConflictStatusException(
+          '예약을 생성할 수 없습니다.("예약신청" 상태 입니다.)',
+        );
+      if (fountReservation?.isConfirm)
+        throw new ConflictStatusException(
+          '예약을 생성할 수 없습니다.("예약확정" 상태가 입니다.)',
+        );
+
+      const reservation = await txReservationRepo.save({
+        seatId: command.seatId,
+        userId: command.userId,
+        price: command.price,
+        status: ReservationStatus.REQUEST,
+      });
+      return GetReservationInfo.of(reservation);
+    };
   }
 
   async confirm(reservationId: number): Promise<GetReservationInfo> {
