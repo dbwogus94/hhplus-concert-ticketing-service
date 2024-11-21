@@ -4,7 +4,7 @@ import {
   RestApiIntProperty,
   WithTotolCountResponse,
 } from 'src/common';
-import { GetSeatsInfo, SeatStatus } from '../../../domain';
+import { GetSeatsInfo, SeatStatus } from '../../../../domain';
 import { plainToInstance } from 'class-transformer';
 
 export class GetSeatsResponse {

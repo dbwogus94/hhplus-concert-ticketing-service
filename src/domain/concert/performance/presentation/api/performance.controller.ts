@@ -10,7 +10,7 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 
 import { QueueGuard } from 'src/domain/queue';
-import { PerformanceFacade } from '../application';
+import { PerformanceFacade } from '../../application';
 import { DocumentHelper } from './document';
 import {
   GetPerformancesQuery,

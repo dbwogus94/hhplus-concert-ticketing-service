@@ -6,7 +6,7 @@ import {
   RestApiStringProperty,
   WithTotolCountResponse,
 } from 'src/common';
-import { GetPerformancesInfo } from '../../../domain';
+import { GetPerformancesInfo } from '../../../../domain';
 
 export class GetPerformancesResponse {
   @RestApiIntProperty({

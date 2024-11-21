@@ -7,8 +7,9 @@ import {
   OnCustomEvent,
   OnCustomEventErrorHandler,
 } from 'src/global';
-import { BookingSeatEvent, ReserveSeatEvent } from './event';
-import { PerformanceFacade } from '../application';
+import { PerformanceFacade } from '../../application';
+import { BookingSeatEvent } from './dto/booking-seat-event';
+import { ReserveSeatEvent } from './dto/reserve-seat-event';
 
 @Injectable()
 export class PerformanceEventListener extends BaseEventListener {

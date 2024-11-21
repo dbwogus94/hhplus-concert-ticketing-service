@@ -1,6 +1,6 @@
 import { IsEnum } from 'class-validator';
 import { RestApiEnumPropertyOptional } from 'src/common';
-import { SeatStatus } from '../../../domain';
+import { SeatStatus } from '../../../../domain';
 
 export class GetSeatsQuery {
   @RestApiEnumPropertyOptional(SeatStatus, {
