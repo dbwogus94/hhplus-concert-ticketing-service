@@ -4,7 +4,7 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { QueueService } from '../../domain';
+import { QueueService } from '../../../domain';
 import { SERVICE_ACCESS_TOKEN, UserInfo } from 'src/common';
 
 @Injectable()

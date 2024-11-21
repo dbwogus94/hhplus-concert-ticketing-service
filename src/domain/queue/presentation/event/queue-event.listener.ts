@@ -7,8 +7,8 @@ import {
   OnCustomEvent,
   OnCustomEventErrorHandler,
 } from 'src/global';
-import { ExpireQueueEvent } from './event';
-import { QueueFacade } from '../application';
+import { ExpireQueueEvent } from './dto';
+import { QueueFacade } from '../../application';
 
 @Injectable()
 export class QueueEventListener extends BaseEventListener {

@@ -1,12 +1,13 @@
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
 
-import { PaymentEntity, PaymentOutboxEntity } from '../doamin/model';
 import {
-  PaymentRepository,
   SaveOutboxParam,
   SavePaymentParam,
+  PaymentEntity,
+  PaymentOutboxEntity,
 } from '../doamin';
+import { PaymentRepository } from '../doamin/payment.repository';
 
 export class PaymentCoreRepository extends PaymentRepository {
   readonly outboxRepo: Repository<PaymentOutboxEntity>;

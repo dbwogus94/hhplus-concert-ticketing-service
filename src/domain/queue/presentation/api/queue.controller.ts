@@ -1,8 +1,8 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
-import { QueueFacade } from '../application';
-import { WriteWaitQueueCommand } from '../domain';
+import { QueueFacade } from '../../application';
+import { WriteWaitQueueCommand } from '../../domain';
 import { DocumentHelper } from './document';
 import {
   PostQueueStateRequest,

@@ -3,7 +3,7 @@ import {
   RestApiStringProperty,
   RestApiStringPropertyOptional,
 } from 'src/common';
-import { QueueStatus } from '../../../domain';
+import { QueueStatus } from '../../../../domain';
 import { plainToInstance } from 'class-transformer';
 import { QueueStatusResult } from 'src/domain/queue/application/dto';
 

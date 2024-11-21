@@ -1,7 +1,7 @@
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
 
-import { QueueFacade } from '../application';
+import { QueueFacade } from '../../application';
 import { CustomLoggerService } from 'src/global';
 
 @Injectable()
@@ -30,7 +30,7 @@ export class QueueSchedule implements OnApplicationBootstrap {
     }
   }
 
-  @Cron(CronExpression.EVERY_MINUTE, {
+  @Cron(CronExpression.EVERY_SECOND, {
     name: QueueSchedule.JOB.CHANGE_QUEUE_ACTIVE_STATUS,
   })
   async changeQueueActiveStatus() {
