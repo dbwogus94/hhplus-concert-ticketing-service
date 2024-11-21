@@ -3,8 +3,8 @@ import { DataSource, EntityManager } from 'typeorm';
 
 import { ConflictStatusException, ResourceNotFoundException } from 'src/common';
 import { PerformanceEntity, SeatEntity } from 'src/domain/concert/performance';
-import { ReservationEntity } from 'src/domain/reservation';
 import {
+  ReservationEntity,
   ReservationFacade,
   ReservationService,
   ReservationStatus,
@@ -62,6 +62,14 @@ describe('ReservationFacade 통합테스트', () => {
           id: reservationId,
           status: ReservationStatus.REQUEST,
         });
+
+        // outbox에 추가된 값을 확인한다.
+        // => TODO: TestingModule에서는 Event emitAsync를 기다리지 않는 현상이 있다. 떄문에 테스트로 확인이 불가능해 보인다.
+        // const outbox = await manager.findOneBy(ReservationOutboxEntity, {
+        //   transactionId: reservationId,
+        // });
+        // expect(outbox.transactionId).toBe(reservationId);
+        // expect(outbox.topic).toBe(ReservationEventListener.REQUEST_EVENT);
 
         // 좌석 상태가 'BOOKED'로 변경되었는지 확인, 이벤트로 분리하며 확인이 불가능하다.
         // const reserveSeat = await performanceService.getReserveSeat(seat.id);

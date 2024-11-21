@@ -1,22 +1,28 @@
 import { Injectable } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
-import { EntityManager } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 
 import { ResourceNotFoundException } from 'src/common';
-import { ReservationEntity, ReservationStatus } from '../doamin';
 import {
   FindByOptions,
+  ReservationEntity,
+  ReservationOutboxEntity,
   ReservationRepository,
+  ReservationStatus,
+  SaveOutboxParam,
   SaveReservationParam,
-} from './reservation.repository';
+} from '../doamin';
 
 @Injectable()
 export class ReservationCoreRepository extends ReservationRepository {
+  readonly outboxRepo: Repository<ReservationOutboxEntity>;
+
   constructor(
     @InjectEntityManager()
     readonly manager: EntityManager,
   ) {
     super(ReservationEntity, manager);
+    this.outboxRepo = manager.getRepository(ReservationOutboxEntity);
   }
 
   override async findReservationBy(
@@ -49,5 +55,13 @@ export class ReservationCoreRepository extends ReservationRepository {
     status: ReservationStatus,
   ): Promise<void> {
     await this.update(reservationId, { status });
+  }
+
+  override async saveOutbox(param: SaveOutboxParam): Promise<void> {
+    const outbox = this.outboxRepo.create({
+      ...param,
+      domainName: 'Reservation',
+    });
+    await this.outboxRepo.save(outbox);
   }
 }

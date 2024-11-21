@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PaymentRepository } from '../infra';
-import { GetPaymentInfo, WritePaymentCommand } from './dto';
+import { GetPaymentInfo, WriteOutboxCommand, WritePaymentCommand } from './dto';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager } from 'typeorm';
 
@@ -22,5 +22,14 @@ export class PaymentService {
       const payment = await txPaymentRepo.savePayment(command);
       return GetPaymentInfo.of(payment);
     };
+  }
+
+  async createOutbox(command: WriteOutboxCommand): Promise<void> {
+    return this.paymentRepo.saveOutbox({
+      transactionId: command.transactionId,
+      topic: command.topic,
+      payload: command.payload,
+      isSent: false,
+    });
   }
 }
