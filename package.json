@@ -26,7 +26,10 @@
     "db:migrate:down": "npm run typeorm -- migration:revert  -d ./migrations/orm.config.ts ",
     "db:drop": "npm run typeorm -- schema:drop -d ./migrations/orm.config.ts",
     "db:sync": "npm run typeorm -- schema:sync -d ./migrations/orm.config.ts",
-    "db:show": "npm run typeorm -- migration:show  -d ./migrations/orm.config.ts"
+    "db:show": "npm run typeorm -- migration:show  -d ./migrations/orm.config.ts",
+    "typeorm:test": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli",
+    "db:drop:test": "npm run typeorm:test -- schema:drop -d ./migrations/orm-test.config.ts",
+    "db:sync:test": "npm run typeorm:test -- schema:sync -d ./migrations/orm-test.config.ts"
   },
   "dependencies": {
     "@nestjs/cache-manager": "^2.3.0",
