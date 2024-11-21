@@ -6,6 +6,7 @@ import {
   CustomLoggerService,
   OnCustomEvent,
   OnCustomEventErrorHandler,
+  OnSyncEvent,
 } from 'src/global';
 import { ReservationFacade } from '../../application';
 import { ConfirmReservationEvent, RequestReservationSyncEvent } from './dto';
@@ -42,17 +43,11 @@ export class ReservationEventListener extends BaseEventListener {
     await this.reservationFacade.confirm(event.reservationId);
   }
 
-  @OnEvent(ReservationEventListener.REQUEST_EVENT, {
-    async: false,
-    suppressErrors: false, // 에러 전파 허용
-  })
+  @OnSyncEvent(ReservationEventListener.REQUEST_EVENT)
   handleRequestReservation(event: RequestReservationSyncEvent) {
     this.logger.debug(
       `On Handle Event - ${ReservationEventListener.REQUEST_EVENT}`,
     );
-    console.log('헨들러 에러 발행');
-
-    // throw new Error('Event Handler Error');
     // 아웃 박스 구현 예정
     // await this.reservationFacade.confirm(event.reservationId);
   }
