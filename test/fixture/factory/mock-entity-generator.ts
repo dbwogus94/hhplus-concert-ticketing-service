@@ -1,11 +1,10 @@
 import { faker } from '@faker-js/faker';
 import {
   PerformanceEntity,
-  ReservationEntity,
-  ReservationStatus,
   SeatEntity,
   SeatStatus,
 } from 'src/domain/concert/performance';
+import { ReservationEntity, ReservationStatus } from 'src/domain/reservation';
 import { PointEntity, UserEntity } from 'src/domain/user';
 
 export class MockEntityGenerator {
