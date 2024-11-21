@@ -1,7 +1,7 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
-import { PaymentFacade, WritePaymentCriteria } from '../application';
+import { PaymentFacade, WritePaymentCriteria } from '../../application';
 import { DocumentHelper } from './document';
 import { PostPaymentRequest, PostPaymentResponse } from './dto';
 
