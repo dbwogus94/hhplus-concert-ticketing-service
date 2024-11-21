@@ -8,8 +8,8 @@ import {
   ReservationEventListener,
 } from './presentation';
 import { ReservationFacade } from './application';
-import { ReservationService } from './doamin';
-import { ReservationCoreRepository, ReservationRepository } from './infra';
+import { ReservationService, ReservationRepository } from './doamin';
+import { ReservationCoreRepository } from './infra';
 
 @Module({
   imports: [UserModule, PerformanceModule, QueueModule],

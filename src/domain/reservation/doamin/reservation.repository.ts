@@ -1,9 +1,18 @@
 import { BaseRepository } from 'src/common';
-import { ReservationEntity, ReservationStatus } from '../doamin';
+import {
+  ReservationEntity,
+  ReservationOutboxEntity,
+  ReservationStatus,
+} from '../doamin';
 
 export type SaveReservationParam = Pick<
   ReservationEntity,
   'userId' | 'seatId' | 'price'
+>;
+
+export type SaveOutboxParam = Pick<
+  ReservationOutboxEntity,
+  'transactionId' | 'topic' | 'payload' | 'isSent'
 >;
 
 export type FindByOptions = Pick<
@@ -24,4 +33,6 @@ export abstract class ReservationRepository extends BaseRepository<ReservationEn
     reservationId: number,
     status: ReservationStatus,
   ): Promise<void>;
+
+  abstract saveOutbox(param: SaveOutboxParam): Promise<void>;
 }
