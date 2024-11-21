@@ -1,36 +1,30 @@
-import { QueueEntity, QueueStatus } from 'src/domain/queue';
-import { BaseEntityFactory } from './base-entity-factory';
+import { ActiveQueueDomain, QueueStatus } from 'src/domain/queue';
 import { generateRandomInt } from './utils';
 
 type QueueProperty = Pick<
-  QueueEntity,
-  | 'id'
-  | 'createdAt'
-  | 'updatedAt'
+  ActiveQueueDomain['prop'],
   | 'uid'
   | 'userId'
   | 'concertId'
   | 'status'
-  | 'activeExpireAt'
+  | 'timestamp'
   | 'activedAt'
   | 'activeFirstAccessAt'
 >;
 
 export class QueueFactory {
-  static create(override: Partial<QueueProperty>): QueueEntity {
-    const entity = new QueueEntity();
+  static create(override: Partial<QueueProperty>): ActiveQueueDomain {
     const property: QueueProperty = {
-      ...BaseEntityFactory.create(),
-      uid: QueueEntity.generateUUIDv4(),
+      uid: ActiveQueueDomain.generateUUIDv4(),
       concertId: generateRandomInt(),
       userId: generateRandomInt(),
       status: QueueStatus.WAIT,
-      activeExpireAt: null,
+      timestamp: Date.now(),
       activedAt: null,
       activeFirstAccessAt: null,
     };
 
-    return Object.assign(entity, {
+    return new ActiveQueueDomain({
       ...property,
       ...override,
     });
@@ -41,13 +35,10 @@ export class QueueFactory {
   }
 
   static createActiveByAccess(override: Partial<QueueProperty> = {}) {
-    return QueueFactory.create(override).active().calculateActiveExpire();
+    return QueueFactory.create(override).active();
   }
 
   static createExpire(override: Partial<QueueProperty> = {}) {
-    return QueueFactory.create(override)
-      .active()
-      .calculateActiveExpire()
-      .expire();
+    return QueueFactory.create(override).active().expire();
   }
 }
