@@ -7,8 +7,8 @@ import {
   OnCustomEvent,
   OnErrorEvent,
 } from 'src/global';
-import { ReservationFacade } from '../application';
-import { ConfirmReservationEvent } from './event';
+import { ReservationFacade } from '../../application';
+import { ConfirmReservationEvent } from './dto';
 
 @Injectable()
 export class ReservationEventListener extends BaseEventListener {

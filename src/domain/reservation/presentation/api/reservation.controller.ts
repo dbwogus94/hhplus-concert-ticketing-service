@@ -2,7 +2,7 @@ import { Body, Controller, HttpCode, Post, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { GetUserInfoDecorator } from 'src/common';
 import { QueueGuard } from 'src/domain/queue';
-import { ReservationFacade, WriteReservationCriteria } from '../application';
+import { ReservationFacade, WriteReservationCriteria } from '../../application';
 import { DocumentHelper } from './document';
 import { PostReservationRequest, PostReservationResponse } from './dto';
 
