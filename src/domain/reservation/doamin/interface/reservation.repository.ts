@@ -3,7 +3,7 @@ import {
   ReservationEntity,
   ReservationOutboxEntity,
   ReservationStatus,
-} from '../doamin';
+} from '../../doamin';
 
 export type SaveReservationParam = Pick<
   ReservationEntity,
@@ -12,12 +12,17 @@ export type SaveReservationParam = Pick<
 
 export type SaveOutboxParam = Pick<
   ReservationOutboxEntity,
-  'transactionId' | 'topic' | 'payload' | 'isSent'
+  'transactionId' | 'domainName' | 'topic' | 'payload' | 'isSent'
 >;
 
 export type FindByOptions = Pick<
   Partial<ReservationEntity>,
   'id' | 'userId' | 'seatId'
+>;
+
+export type FindOutboxByOptions = Pick<
+  Partial<ReservationOutboxEntity>,
+  'transactionId' | 'topic' | 'isSent'
 >;
 
 export abstract class ReservationRepository extends BaseRepository<ReservationEntity> {
@@ -35,4 +40,7 @@ export abstract class ReservationRepository extends BaseRepository<ReservationEn
   ): Promise<void>;
 
   abstract saveOutbox(param: SaveOutboxParam): Promise<void>;
+  abstract getOutboxBy(
+    options: FindOutboxByOptions,
+  ): Promise<ReservationOutboxEntity>;
 }

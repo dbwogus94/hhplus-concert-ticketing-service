@@ -2,9 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
 
-import { ResourceNotFoundException } from 'src/common';
+import { ResourceNotFoundException, RunTimeException } from 'src/common';
 import {
   FindByOptions,
+  FindOutboxByOptions,
   ReservationEntity,
   ReservationOutboxEntity,
   ReservationRepository,
@@ -60,8 +61,18 @@ export class ReservationCoreRepository extends ReservationRepository {
   override async saveOutbox(param: SaveOutboxParam): Promise<void> {
     const outbox = this.outboxRepo.create({
       ...param,
-      domainName: 'Reservation',
     });
     await this.outboxRepo.save(outbox);
+  }
+
+  override async getOutboxBy(
+    options: FindOutboxByOptions,
+  ): Promise<ReservationOutboxEntity> {
+    const outbox = await this.outboxRepo.findOneBy(options);
+    if (!outbox)
+      throw new RunTimeException(
+        '해당하는 reservation outbox가 존재하지 않습니다.',
+      );
+    return outbox;
   }
 }
