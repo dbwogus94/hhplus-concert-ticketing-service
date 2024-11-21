@@ -11,9 +11,10 @@ import { CustomLoggerModule, RedisModule } from 'src/global';
 
 let testingModule: TestingModule;
 let dataSource: DataSource;
+let clientRedis: Redis;
 
 beforeAll(async () => {
-  const clientRedis = new Redis({
+  clientRedis = new Redis({
     host: process.env.REDIS_HOST,
     port: +process.env.REDIS_PORT,
     db: 1,
@@ -37,10 +38,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  if (dataSource && dataSource.isInitialized) {
-    await dataSource.destroy();
-    await testingModule.close();
-  }
+  await testingModule.close();
 });
 
 export const getTestingModule = () => {

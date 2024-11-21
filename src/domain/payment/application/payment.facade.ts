@@ -3,13 +3,10 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager } from 'typeorm';
 
-import {
-  ConfirmReservationEvent,
-  ReservationEventListener,
-  ReservationService,
-} from 'src/domain/reservation';
+import { ReservationService } from 'src/domain/reservation';
 import { UserService, WriteUserPointCommand } from 'src/domain/user';
 import { GetPaymentInfo, PaymentService, WritePaymentCommand } from '../doamin';
+import { PaymentEventListener, PayPaymentSyncEvent } from '../presentation';
 import { WritePaymentCriteria } from './dto';
 
 @Injectable()
@@ -50,11 +47,19 @@ export class PaymentFacade {
         }),
       )(txManager);
 
-      // 예약 확정 이벤트
-      this.eventEmitter.emit(
-        ReservationEventListener.CONFIRM_EVENT,
-        ConfirmReservationEvent.from({ reservationId }),
+      await this.eventEmitter.emitAsync(
+        PaymentEventListener.PAY_EVENT,
+        PayPaymentSyncEvent.from({
+          paymentId: paymentInfo.id,
+          payload: JSON.stringify(paymentInfo),
+        }),
       );
+
+      // // 예약 확정 이벤트
+      // this.eventEmitter.emit(
+      //   ReservationEventListener.CONFIRM_EVENT,
+      //   ConfirmReservationEvent.from({ reservationId }),
+      // );
 
       return paymentInfo;
     });
