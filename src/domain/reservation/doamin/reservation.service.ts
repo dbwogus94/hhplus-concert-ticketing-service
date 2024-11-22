@@ -109,8 +109,8 @@ export class ReservationService {
     });
   }
 
-  async getOutboxes(): Promise<GetReservationOutboxInfo[]> {
-    const outboxes = await this.reservationRepo.getOutboxes();
+  async getFailOutboxes(): Promise<GetReservationOutboxInfo[]> {
+    const outboxes = await this.reservationRepo.getOutboxes({ isSent: false });
     return GetReservationOutboxInfo.of(outboxes);
   }
 }

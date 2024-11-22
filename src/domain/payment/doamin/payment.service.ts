@@ -56,8 +56,8 @@ export class PaymentService {
     });
   }
 
-  async getOutboxes(): Promise<GetPaymentOutboxInfo[]> {
-    const outboxes = await this.paymentRepo.getOutboxes();
+  async getFailOutboxes(): Promise<GetPaymentOutboxInfo[]> {
+    const outboxes = await this.paymentRepo.getOutboxes({ isSent: false });
     return GetPaymentOutboxInfo.of(outboxes);
   }
 }

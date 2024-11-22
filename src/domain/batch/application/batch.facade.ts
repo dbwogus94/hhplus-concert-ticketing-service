@@ -10,7 +10,7 @@ export class BatchFacade {
   ) {}
 
   async reProducingReservationOutBox() {
-    const reservationOutboxes = await this.reservationService.getOutboxes();
+    const reservationOutboxes = await this.reservationService.getFailOutboxes();
 
     const promises = reservationOutboxes.map((outbox) => {
       return this.reservationService.sendOutbox(outbox.transactionId);
@@ -19,7 +19,7 @@ export class BatchFacade {
   }
 
   async reProducingPaymentOutBox() {
-    const paymentOutboxes = await this.paymentService.getOutboxes();
+    const paymentOutboxes = await this.paymentService.getFailOutboxes();
 
     const promises = paymentOutboxes.map((outbox) => {
       return this.reservationService.sendOutbox(outbox.transactionId);
