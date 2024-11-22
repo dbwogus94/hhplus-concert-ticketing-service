@@ -16,5 +16,6 @@ import { PaymentCoreProducer, PaymentCoreRepository } from './infra';
     { provide: PaymentRepository, useClass: PaymentCoreRepository },
     { provide: PaymentProducer, useClass: PaymentCoreProducer },
   ],
+  exports: [PaymentService],
 })
 export class PaymentModule {}
