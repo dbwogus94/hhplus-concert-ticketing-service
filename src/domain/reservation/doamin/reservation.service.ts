@@ -102,6 +102,7 @@ export class ReservationService {
     });
 
     await this.reservationRepo.saveOutbox({
+      id: outbox.id,
       transactionId,
       isSent: true,
     });

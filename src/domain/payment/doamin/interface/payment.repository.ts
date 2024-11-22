@@ -9,7 +9,7 @@ export type SavePaymentParam = Pick<
 
 export type SaveOutboxParam = Pick<
   Partial<PaymentOutboxEntity>,
-  'transactionId' | 'domainName' | 'topic' | 'payload' | 'isSent'
+  'id' | 'transactionId' | 'domainName' | 'topic' | 'payload' | 'isSent'
 >;
 export type FindOutboxByOptions = Pick<
   Partial<PaymentOutboxEntity>,

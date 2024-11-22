@@ -45,6 +45,7 @@ export class PaymentService {
     });
 
     await this.paymentRepo.saveOutbox({
+      id: outbox.id,
       transactionId,
       isSent: true,
     });
