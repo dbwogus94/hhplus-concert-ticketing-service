@@ -47,7 +47,10 @@ export class ReservationFacade {
         ReservationEventListener.REQUEST_OUTBOX_EVENT,
         RequestReservationSyncEvent.from({
           reservationId: reservation.id,
-          payload: JSON.stringify(reservation),
+          payload: JSON.stringify({
+            ...reservation,
+            queueUid: criteria.queueUid,
+          }),
         }),
       );
 
