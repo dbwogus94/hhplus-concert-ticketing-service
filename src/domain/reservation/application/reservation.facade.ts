@@ -3,11 +3,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager } from 'typeorm';
 
-import {
-  BookingSeatEvent,
-  PerformanceEventListener,
-  PerformanceService,
-} from 'src/domain/concert/performance';
+import { PerformanceService } from 'src/domain/concert/performance';
 import { UserService } from 'src/domain/user';
 import {
   ReservationService,
@@ -61,12 +57,6 @@ export class ReservationFacade {
 
   async confirm(reservationId: number) {
     const reservation = await this.reservationService.confirm(reservationId);
-
-    // 좌석 예약 확정 이벤트
-    this.eventEmitter.emit(
-      PerformanceEventListener.BOOKING_SEAT_EVENT,
-      BookingSeatEvent.from({ seatId: reservation.seatId }),
-    );
     return reservation.id;
   }
 
