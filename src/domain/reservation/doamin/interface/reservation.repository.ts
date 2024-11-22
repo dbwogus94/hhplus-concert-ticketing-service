@@ -43,4 +43,6 @@ export abstract class ReservationRepository extends BaseRepository<ReservationEn
   abstract getOutboxBy(
     options: FindOutboxByOptions,
   ): Promise<ReservationOutboxEntity>;
+
+  abstract getOutboxes(): Promise<ReservationOutboxEntity[]>;
 }

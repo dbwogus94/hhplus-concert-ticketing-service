@@ -1,7 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 
-import { GetPaymentInfo, WriteOutboxCommand, WritePaymentCommand } from './dto';
+import {
+  GetPaymentInfo,
+  GetPaymentOutboxInfo,
+  WriteOutboxCommand,
+  WritePaymentCommand,
+} from './dto';
 import { PaymentProducer, PaymentRepository } from './interface';
 
 @Injectable()
@@ -49,5 +54,10 @@ export class PaymentService {
       transactionId,
       isSent: true,
     });
+  }
+
+  async getOutboxes(): Promise<GetPaymentOutboxInfo[]> {
+    const outboxes = await this.paymentRepo.getOutboxes();
+    return GetPaymentOutboxInfo.of(outboxes);
   }
 }

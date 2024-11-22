@@ -23,4 +23,6 @@ export abstract class PaymentRepository extends BaseRepository<PaymentEntity> {
   abstract getOutboxBy(
     options: FindOutboxByOptions,
   ): Promise<PaymentOutboxEntity>;
+
+  abstract getOutboxes(): Promise<PaymentOutboxEntity[]>;
 }
