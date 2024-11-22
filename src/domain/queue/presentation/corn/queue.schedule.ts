@@ -1,10 +1,12 @@
-import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import { Controller, OnApplicationBootstrap } from '@nestjs/common';
 import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
 
-import { QueueFacade } from '../../application';
+import { ApiExcludeController } from '@nestjs/swagger';
 import { CustomLoggerService } from 'src/global';
+import { QueueFacade } from '../../application';
 
-@Injectable()
+@ApiExcludeController()
+@Controller()
 export class QueueSchedule implements OnApplicationBootstrap {
   /** 1분 마다 실행 */
   static readonly CON_TIME = '0 */1 * * * *';
