@@ -25,7 +25,7 @@ export class PaymentService {
   }
 
   async createOutbox(command: WriteOutboxCommand): Promise<void> {
-    return this.paymentRepo.saveOutbox({
+    await this.paymentRepo.saveOutbox({
       transactionId: command.transactionId,
       domainName: command.domainName,
       topic: command.topic,
@@ -34,14 +34,19 @@ export class PaymentService {
     });
   }
 
-  async emitOutbox(transactionId: number): Promise<void> {
+  async sendOutbox(transactionId: number): Promise<void> {
     const outbox = await this.paymentRepo.getOutboxBy({
-      transactionId: transactionId,
+      transactionId,
       isSent: false,
     });
 
-    this.paymentProducer.emitPayPayment({
+    await this.paymentProducer.sendPayPayment({
       ...outbox,
+    });
+
+    await this.paymentRepo.saveOutbox({
+      transactionId,
+      isSent: true,
     });
   }
 }

@@ -91,14 +91,19 @@ export class ReservationService {
     });
   }
 
-  async emitOutbox(transactionId: number): Promise<void> {
+  async sendOutbox(transactionId: number): Promise<void> {
     const outbox = await this.reservationRepo.getOutboxBy({
       transactionId: transactionId,
       isSent: false,
     });
 
-    this.reservationProducer.emitRequestReservation({
+    await this.reservationProducer.sendRequestReservation({
       ...outbox,
+    });
+
+    await this.reservationRepo.saveOutbox({
+      transactionId,
+      isSent: true,
     });
   }
 }

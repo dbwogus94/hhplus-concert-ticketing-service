@@ -1,10 +1,10 @@
 import { PaymentOutboxEntity } from '../model';
 
-export type EmitPayPaymentParam = Pick<
+export type SendPayPaymentParam = Pick<
   PaymentOutboxEntity,
   'transactionId' | 'payload' | 'topic'
 >;
 
 export abstract class PaymentProducer {
-  abstract emitPayPayment(param: EmitPayPaymentParam): void;
+  abstract sendPayPayment(param: SendPayPaymentParam): Promise<void>;
 }

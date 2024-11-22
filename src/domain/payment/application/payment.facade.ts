@@ -65,10 +65,10 @@ export class PaymentFacade {
   }
 
   async createOutbox(command: WriteOutboxCommand) {
-    return this.paymentService.createOutbox(command);
+    return await this.paymentService.createOutbox(command);
   }
 
-  async emitOutbox(transactionId: number) {
-    return this.reservationService.emitOutbox(transactionId);
+  async sendOutbox(transactionId: number) {
+    return await this.paymentService.sendOutbox(transactionId);
   }
 }

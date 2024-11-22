@@ -11,7 +11,7 @@ export type SaveReservationParam = Pick<
 >;
 
 export type SaveOutboxParam = Pick<
-  ReservationOutboxEntity,
+  Partial<ReservationOutboxEntity>,
   'transactionId' | 'domainName' | 'topic' | 'payload' | 'isSent'
 >;
 

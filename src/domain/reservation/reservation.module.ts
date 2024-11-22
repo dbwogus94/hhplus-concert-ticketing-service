@@ -17,9 +17,8 @@ import { ReservationCoreProducer, ReservationCoreRepository } from './infra';
 
 @Module({
   imports: [UserModule, PerformanceModule, QueueModule],
-  controllers: [ReservationController],
+  controllers: [ReservationController, ReservationEventListener],
   providers: [
-    ReservationEventListener,
     ReservationFacade,
     ReservationService,
     {

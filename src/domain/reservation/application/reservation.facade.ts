@@ -64,7 +64,7 @@ export class ReservationFacade {
     return this.reservationService.createOutbox(command);
   }
 
-  async emitOutbox(transactionId: number) {
-    return this.reservationService.emitOutbox(transactionId);
+  async sendOutbox(transactionId: number) {
+    return this.reservationService.sendOutbox(transactionId);
   }
 }

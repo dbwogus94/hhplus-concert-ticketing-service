@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Controller } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
+import { ApiExcludeController } from '@nestjs/swagger';
 import {
   BaseEventListener,
   CustomLoggerService,
@@ -12,7 +13,8 @@ import { ReservationFacade } from '../../application';
 import { WriteOutboxCommand } from '../../doamin';
 import { RequestReservationSyncEvent } from './dto';
 
-@Injectable()
+@ApiExcludeController()
+@Controller()
 export class ReservationEventListener extends BaseEventListener {
   static readonly EVENT_GROUP = 'reservation';
   static readonly REQUEST_OUTBOX_EVENT = 'reservation.request.outbox';
@@ -52,7 +54,7 @@ export class ReservationEventListener extends BaseEventListener {
     this.logger.debug(
       `On Handle Event - ${ReservationEventListener.REQUEST_TOPIC_EVENT}`,
     );
-    await this.reservationFacade.emitOutbox(transactionId);
+    await this.reservationFacade.sendOutbox(transactionId);
   }
 
   @OnCustomEventErrorHandler(ReservationEventListener.EVENT_GROUP)

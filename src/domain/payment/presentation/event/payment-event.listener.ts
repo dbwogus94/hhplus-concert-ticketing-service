@@ -17,8 +17,8 @@ import { PayPaymentSyncEvent } from './dto';
 @Controller()
 export class PaymentEventListener extends BaseEventListener {
   static readonly EVENT_GROUP = 'payment';
-  static readonly PAY_OUTBOX_EVENT = 'payment.request.outbox';
-  static readonly PAY_TOPIC_EVENT = 'payment.request.topic';
+  static readonly PAY_OUTBOX_EVENT = 'payment.pay.outbox';
+  static readonly PAY_TOPIC_EVENT = 'payment.pay.topic';
 
   constructor(
     private readonly logger: CustomLoggerService,
@@ -54,7 +54,7 @@ export class PaymentEventListener extends BaseEventListener {
     this.logger.debug(
       `On Handle Event - ${PaymentEventListener.PAY_TOPIC_EVENT}`,
     );
-    await this.paymentFacade.emitOutbox(transactionId);
+    await this.paymentFacade.sendOutbox(transactionId);
   }
 
   @OnCustomEventErrorHandler(PaymentEventListener.EVENT_GROUP)

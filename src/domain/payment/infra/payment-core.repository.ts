@@ -41,7 +41,7 @@ export class PaymentCoreRepository extends PaymentRepository {
     const outbox = await this.outboxRepo.findOneBy(options);
     if (!outbox)
       throw new RunTimeException(
-        '해당하는 reservation outbox가 존재하지 않습니다.',
+        '해당하는 payment outbox가 존재하지 않습니다.',
       );
     return outbox;
   }

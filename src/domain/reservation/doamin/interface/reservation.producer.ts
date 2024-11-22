@@ -6,5 +6,7 @@ export type SendRequestReservationParam = Pick<
 >;
 
 export abstract class ReservationProducer {
-  abstract emitRequestReservation(param: SendRequestReservationParam): void;
+  abstract sendRequestReservation(
+    param: SendRequestReservationParam,
+  ): Promise<void>;
 }
