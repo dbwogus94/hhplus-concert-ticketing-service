@@ -3,8 +3,10 @@ import { ClientKafka, MessagePattern } from '@nestjs/microservices';
 
 import { KAFKA_CLIENT_NAME } from 'src/common';
 import { ConsumRequestReservation } from './dto';
+import { ApiExcludeController } from '@nestjs/swagger';
 
-@Controller('performance-consumer')
+@ApiExcludeController()
+@Controller()
 export class PerformanceConsumer {
   constructor(
     @Inject(KAFKA_CLIENT_NAME)
