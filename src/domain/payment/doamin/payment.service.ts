@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { PaymentRepository } from '../infra';
-import { GetPaymentInfo, WriteOutboxCommand, WritePaymentCommand } from './dto';
-import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager } from 'typeorm';
+
+import { GetPaymentInfo, WriteOutboxCommand, WritePaymentCommand } from './dto';
+import { PaymentProducer, PaymentRepository } from './interface';
 
 @Injectable()
 export class PaymentService {
   constructor(
-    @InjectEntityManager() private readonly manager: EntityManager,
     private readonly paymentRepo: PaymentRepository,
+    private readonly paymentProducer: PaymentProducer,
   ) {}
 
   payment(
@@ -27,9 +27,21 @@ export class PaymentService {
   async createOutbox(command: WriteOutboxCommand): Promise<void> {
     return this.paymentRepo.saveOutbox({
       transactionId: command.transactionId,
+      domainName: command.domainName,
       topic: command.topic,
       payload: command.payload,
       isSent: false,
+    });
+  }
+
+  async emitOutbox(transactionId: number): Promise<void> {
+    const outbox = await this.paymentRepo.getOutboxBy({
+      transactionId: transactionId,
+      isSent: false,
+    });
+
+    this.paymentProducer.emitPayPayment({
+      ...outbox,
     });
   }
 }
