@@ -6,8 +6,10 @@ import {
   SavePaymentParam,
   PaymentEntity,
   PaymentOutboxEntity,
+  FindOutboxByOptions,
 } from '../doamin';
-import { PaymentRepository } from '../doamin/payment.repository';
+import { PaymentRepository } from '../doamin';
+import { RunTimeException } from 'src/common';
 
 export class PaymentCoreRepository extends PaymentRepository {
   readonly outboxRepo: Repository<PaymentOutboxEntity>;
@@ -17,6 +19,7 @@ export class PaymentCoreRepository extends PaymentRepository {
     readonly manager: EntityManager,
   ) {
     super(PaymentEntity, manager);
+    this.outboxRepo = manager.getRepository(PaymentOutboxEntity);
   }
 
   override async savePayment(param: SavePaymentParam): Promise<PaymentEntity> {
@@ -28,8 +31,18 @@ export class PaymentCoreRepository extends PaymentRepository {
   override async saveOutbox(param: SaveOutboxParam): Promise<void> {
     const outbox = this.outboxRepo.create({
       ...param,
-      domainName: 'Payment',
     });
     await this.outboxRepo.save(outbox);
+  }
+
+  override async getOutboxBy(
+    options: FindOutboxByOptions,
+  ): Promise<PaymentOutboxEntity> {
+    const outbox = await this.outboxRepo.findOneBy(options);
+    if (!outbox)
+      throw new RunTimeException(
+        '해당하는 reservation outbox가 존재하지 않습니다.',
+      );
+    return outbox;
   }
 }

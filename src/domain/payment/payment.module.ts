@@ -4,17 +4,17 @@ import { UserModule } from '../user';
 import { ReservationModule } from '../reservation';
 import { PaymentController, PaymentEventListener } from './presentation';
 import { PaymentFacade } from './application';
-import { PaymentService } from './doamin';
-import { PaymentCoreRepository, PaymentRepository } from './infra';
+import { PaymentService, PaymentRepository, PaymentProducer } from './doamin';
+import { PaymentCoreProducer, PaymentCoreRepository } from './infra';
 
 @Module({
   imports: [UserModule, ReservationModule],
-  controllers: [PaymentController],
+  controllers: [PaymentController, PaymentEventListener],
   providers: [
-    PaymentEventListener,
     PaymentFacade,
     PaymentService,
     { provide: PaymentRepository, useClass: PaymentCoreRepository },
+    { provide: PaymentProducer, useClass: PaymentCoreProducer },
   ],
 })
 export class PaymentModule {}
