@@ -12,14 +12,14 @@ import { ApiExcludeController } from '@nestjs/swagger';
 
 @ApiExcludeController()
 @Controller()
-export class QueueConsumer implements OnModuleInit, OnModuleDestroy {
+export class ReservationConsumer implements OnModuleInit, OnModuleDestroy {
   constructor(
     @Inject(KAFKA_CLIENT_NAME)
     private readonly kafkaClient: ClientKafka,
   ) {}
 
   async onModuleInit(): Promise<void> {
-    const topics = ['reservation.request.topic'];
+    const topics = ['payment.pay.topic'];
     topics.forEach((topic) => this.kafkaClient.subscribeToResponseOf(topic));
     await this.kafkaClient.connect();
   }
@@ -28,10 +28,10 @@ export class QueueConsumer implements OnModuleInit, OnModuleDestroy {
     await this.kafkaClient.close();
   }
 
-  @MessagePattern('reservation.request.topic')
-  async handleRequestReservation(@Payload() data: ConsumRequestReservation) {
+  @MessagePattern('payment.pay.topic')
+  async handlePayPayment(@Payload() data: ConsumRequestReservation) {
     const { payload } = data;
-    console.log('handleRequestReservation: ', payload);
+    console.log('handlePayPayment: ', payload);
     return data;
   }
 }

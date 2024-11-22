@@ -48,7 +48,6 @@ const clientRedis = new Redis({ db: 1 });
               },
             },
             consumer: {
-              allowAutoTopicCreation: true,
               groupId: 'concert-consumer',
               retry: {
                 retries: 2,
