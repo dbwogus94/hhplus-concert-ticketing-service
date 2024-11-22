@@ -9,7 +9,21 @@ export class BatchFacade {
     private readonly paymentService: PaymentService,
   ) {}
 
-  async reProducingReservationOutBox() {}
+  async reProducingReservationOutBox() {
+    const reservationOutboxes = await this.reservationService.getOutboxes();
 
-  async reProducingPaymentOutBox() {}
+    const promises = reservationOutboxes.map((outbox) => {
+      return this.reservationService.sendOutbox(outbox.transactionId);
+    });
+    await Promise.all(promises);
+  }
+
+  async reProducingPaymentOutBox() {
+    const paymentOutboxes = await this.paymentService.getOutboxes();
+
+    const promises = paymentOutboxes.map((outbox) => {
+      return this.reservationService.sendOutbox(outbox.transactionId);
+    });
+    await Promise.all(promises);
+  }
 }
