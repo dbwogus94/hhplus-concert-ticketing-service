@@ -1,5 +1,6 @@
 type WriteOutboxCommandProp = {
   readonly transactionId: number;
+  readonly domainName: string;
   readonly topic: string;
   readonly payload: string;
 };
@@ -9,6 +10,10 @@ export class WriteOutboxCommand {
 
   get transactionId() {
     return this.prop.transactionId;
+  }
+
+  get domainName() {
+    return this.prop.domainName;
   }
 
   get topic() {

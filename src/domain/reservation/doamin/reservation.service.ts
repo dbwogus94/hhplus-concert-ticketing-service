@@ -8,11 +8,14 @@ import {
   WriteOutboxCommand,
   WriteReservationCommand,
 } from './dto';
-import { ReservationRepository } from './reservation.repository';
+import { ReservationProducer, ReservationRepository } from './interface';
 
 @Injectable()
 export class ReservationService {
-  constructor(private readonly reservationRepo: ReservationRepository) {}
+  constructor(
+    private readonly reservationRepo: ReservationRepository,
+    private readonly reservationProducer: ReservationProducer,
+  ) {}
 
   reserve(
     command: WriteReservationCommand,
@@ -81,9 +84,21 @@ export class ReservationService {
   async createOutbox(command: WriteOutboxCommand): Promise<void> {
     return this.reservationRepo.saveOutbox({
       transactionId: command.transactionId,
+      domainName: command.domainName,
       topic: command.topic,
       payload: command.payload,
       isSent: false,
+    });
+  }
+
+  async emitOutbox(transactionId: number): Promise<void> {
+    const outbox = await this.reservationRepo.getOutboxBy({
+      transactionId: transactionId,
+      isSent: false,
+    });
+
+    this.reservationProducer.emitRequestReservation({
+      ...outbox,
     });
   }
 }

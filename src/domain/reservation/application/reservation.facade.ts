@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { InjectEntityManager } from '@nestjs/typeorm';
+import { EntityManager } from 'typeorm';
 
 import {
   BookingSeatEvent,
@@ -17,8 +19,6 @@ import {
   ReservationEventListener,
 } from '../presentation';
 import { WriteReservationCriteria } from './criteria';
-import { InjectEntityManager } from '@nestjs/typeorm';
-import { EntityManager } from 'typeorm';
 
 @Injectable()
 export class ReservationFacade {
@@ -48,7 +48,7 @@ export class ReservationFacade {
       )(txManager);
 
       await this.eventEmitter.emitAsync(
-        ReservationEventListener.REQUEST_EVENT,
+        ReservationEventListener.REQUEST_OUTBOX_EVENT,
         RequestReservationSyncEvent.from({
           reservationId: reservation.id,
           payload: JSON.stringify(reservation),
@@ -57,18 +57,6 @@ export class ReservationFacade {
 
       return reservation.id;
     });
-
-    // // 좌석 임시 예약 이벤트
-    // this.eventEmitter.emit(
-    //   PerformanceEventListener.RESERVE_SEAT_EVENT,
-    //   ReserveSeatEvent.from({ seatId: seat.id }),
-    // );
-
-    // // 큐 만료 이벤트 발생
-    // this.eventEmitter.emit(
-    //   QueueEventListener.EXPIRE,
-    //   ExpireQueueEvent.from({ queueUid: criteria.queueUid }),
-    // );
   }
 
   async confirm(reservationId: number) {
@@ -84,5 +72,9 @@ export class ReservationFacade {
 
   async createOutbox(command: WriteOutboxCommand) {
     return this.reservationService.createOutbox(command);
+  }
+
+  async emitOutbox(transactionId: number) {
+    return this.reservationService.emitOutbox(transactionId);
   }
 }
