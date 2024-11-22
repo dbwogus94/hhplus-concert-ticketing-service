@@ -1,3 +1,4 @@
 export class ConsumRequestReservation {
-  payload: string;
+  key: string;
+  value: string;
 }
