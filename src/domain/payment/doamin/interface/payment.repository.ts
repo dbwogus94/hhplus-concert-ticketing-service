@@ -9,7 +9,7 @@ export type SavePaymentParam = Pick<
 
 export type SaveOutboxParam = Pick<
   Partial<PaymentOutboxEntity>,
-  'transactionId' | 'domainName' | 'topic' | 'payload' | 'isSent'
+  'id' | 'transactionId' | 'domainName' | 'topic' | 'payload' | 'isSent'
 >;
 export type FindOutboxByOptions = Pick<
   Partial<PaymentOutboxEntity>,
@@ -23,4 +23,8 @@ export abstract class PaymentRepository extends BaseRepository<PaymentEntity> {
   abstract getOutboxBy(
     options: FindOutboxByOptions,
   ): Promise<PaymentOutboxEntity>;
+
+  abstract getOutboxes(
+    options: FindOutboxByOptions,
+  ): Promise<PaymentOutboxEntity[]>;
 }

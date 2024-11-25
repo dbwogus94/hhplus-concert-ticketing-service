@@ -12,7 +12,7 @@ export type SaveReservationParam = Pick<
 
 export type SaveOutboxParam = Pick<
   Partial<ReservationOutboxEntity>,
-  'transactionId' | 'domainName' | 'topic' | 'payload' | 'isSent'
+  'id' | 'transactionId' | 'domainName' | 'topic' | 'payload' | 'isSent'
 >;
 
 export type FindByOptions = Pick<
@@ -43,4 +43,8 @@ export abstract class ReservationRepository extends BaseRepository<ReservationEn
   abstract getOutboxBy(
     options: FindOutboxByOptions,
   ): Promise<ReservationOutboxEntity>;
+
+  abstract getOutboxes(
+    options: FindOutboxByOptions,
+  ): Promise<ReservationOutboxEntity[]>;
 }

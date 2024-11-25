@@ -52,14 +52,18 @@ export class PaymentFacade {
         }),
       )(txManager);
 
+      // TODO: 현재는 결제에서 예약과 좌석을 변경하는 방식을 사용한다.
+      // 이후에는 [결제 => 예약 => 좌석 변경] 이러한 방식을 사용하는게 적합해보인다.
       await this.eventEmitter.emitAsync(
         PaymentEventListener.PAY_OUTBOX_EVENT,
         PayPaymentSyncEvent.from({
           paymentId: paymentInfo.id,
-          payload: JSON.stringify(paymentInfo),
+          payload: JSON.stringify({
+            ...paymentInfo,
+            seatId: reservation.seatId,
+          }),
         }),
       );
-
       return paymentInfo;
     });
   }

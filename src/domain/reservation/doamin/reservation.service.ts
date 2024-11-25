@@ -5,6 +5,7 @@ import { ConflictStatusException } from 'src/common';
 import { ReservationStatus } from './model';
 import {
   GetReservationInfo,
+  GetReservationOutboxInfo,
   WriteOutboxCommand,
   WriteReservationCommand,
 } from './dto';
@@ -102,8 +103,14 @@ export class ReservationService {
     });
 
     await this.reservationRepo.saveOutbox({
+      id: outbox.id,
       transactionId,
       isSent: true,
     });
+  }
+
+  async getFailOutboxes(): Promise<GetReservationOutboxInfo[]> {
+    const outboxes = await this.reservationRepo.getOutboxes({ isSent: false });
+    return GetReservationOutboxInfo.of(outboxes);
   }
 }

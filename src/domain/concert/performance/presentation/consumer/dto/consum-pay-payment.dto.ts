@@ -1,3 +1,4 @@
 export class ConsumPayPayment {
-  payload: string;
+  key: string;
+  value: string;
 }
