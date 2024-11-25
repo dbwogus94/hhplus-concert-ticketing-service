@@ -1,2 +1,2 @@
 export * from './payment-core.repository';
-export * from '../doamin/payment.repository';
+export * from './payment-core.producer';

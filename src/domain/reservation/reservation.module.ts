@@ -8,19 +8,26 @@ import {
   ReservationEventListener,
 } from './presentation';
 import { ReservationFacade } from './application';
-import { ReservationService, ReservationRepository } from './doamin';
-import { ReservationCoreRepository } from './infra';
+import {
+  ReservationService,
+  ReservationRepository,
+  ReservationProducer,
+} from './doamin';
+import { ReservationCoreProducer, ReservationCoreRepository } from './infra';
 
 @Module({
   imports: [UserModule, PerformanceModule, QueueModule],
-  controllers: [ReservationController],
+  controllers: [ReservationController, ReservationEventListener],
   providers: [
-    ReservationEventListener,
     ReservationFacade,
     ReservationService,
     {
       provide: ReservationRepository,
       useClass: ReservationCoreRepository,
+    },
+    {
+      provide: ReservationProducer,
+      useClass: ReservationCoreProducer,
     },
   ],
   exports: [ReservationService],

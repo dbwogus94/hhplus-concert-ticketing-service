@@ -5,11 +5,11 @@ import { UserModule } from 'src/domain/user';
 import { PerformanceFacade } from './application';
 import { PerformanceService } from './domain/performance.service';
 import { PerformanceCoreRepository, PerformanceRepository } from './infra';
-import { PerformanceController } from './presentation/performance.controller';
+import { PerformanceController, PerformanceConsumer } from './presentation';
 
 @Module({
   imports: [UserModule, QueueModule],
-  controllers: [PerformanceController],
+  controllers: [PerformanceController, PerformanceConsumer],
   providers: [
     PerformanceFacade,
     PerformanceService,

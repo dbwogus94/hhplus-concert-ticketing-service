@@ -8,13 +8,12 @@ import {
   WaitQueueCoreRedis,
   WaitQueueRedis,
 } from './infra';
-import { QueueController, QueueSchedule } from './presentation';
+import { QueueConsumer, QueueController, QueueSchedule } from './presentation';
 
 @Module({
   imports: [],
-  controllers: [QueueController],
+  controllers: [QueueController, QueueSchedule, QueueConsumer],
   providers: [
-    QueueSchedule,
     QueueFacade,
     QueueService,
     { provide: WaitQueueRedis, useClass: WaitQueueCoreRedis },

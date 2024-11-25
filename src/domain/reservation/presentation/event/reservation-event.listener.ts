@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Controller } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
+import { ApiExcludeController } from '@nestjs/swagger';
 import {
   BaseEventListener,
   CustomLoggerService,
@@ -10,18 +11,14 @@ import {
 } from 'src/global';
 import { ReservationFacade } from '../../application';
 import { WriteOutboxCommand } from '../../doamin';
-import { ConfirmReservationEvent, RequestReservationSyncEvent } from './dto';
+import { RequestReservationSyncEvent } from './dto';
 
-// type Events = {
-//   'reservation.confirm': ConfirmReservationEvent;
-//   'reservation.request': RequestReservationSyncEvent;
-// };
-
-@Injectable()
+@ApiExcludeController()
+@Controller()
 export class ReservationEventListener extends BaseEventListener {
   static readonly EVENT_GROUP = 'reservation';
-  static readonly CONFIRM_EVENT = 'reservation.confirm';
-  static readonly REQUEST_EVENT = 'reservation.request';
+  static readonly REQUEST_OUTBOX_EVENT = 'reservation.request.outbox';
+  static readonly REQUEST_TOPIC_EVENT = 'reservation.request.topic';
 
   constructor(
     private readonly logger: CustomLoggerService,
@@ -32,30 +29,32 @@ export class ReservationEventListener extends BaseEventListener {
     this.logger.setTarget(this.constructor.name);
   }
 
-  /**
-   * @param event
-   * @deprecated
-   */
-  @OnCustomEvent(ReservationEventListener.CONFIRM_EVENT, { async: true })
-  async handleReserveSeat(event: ConfirmReservationEvent) {
+  @OnSyncEvent(ReservationEventListener.REQUEST_OUTBOX_EVENT)
+  async handleRequestReservationOutBox(event: RequestReservationSyncEvent) {
     this.logger.debug(
-      `On Handle Event - ${ReservationEventListener.CONFIRM_EVENT}`,
-    );
-    await this.reservationFacade.confirm(event.reservationId);
-  }
-
-  @OnSyncEvent(ReservationEventListener.REQUEST_EVENT)
-  async handleRequestReservation(event: RequestReservationSyncEvent) {
-    this.logger.debug(
-      `On Handle Event - ${ReservationEventListener.REQUEST_EVENT}`,
+      `On Handle Event - ${ReservationEventListener.REQUEST_OUTBOX_EVENT}`,
     );
     await this.reservationFacade.createOutbox(
       WriteOutboxCommand.from({
         transactionId: event.reservationId,
+        domainName: ReservationEventListener.REQUEST_OUTBOX_EVENT,
+        topic: ReservationEventListener.REQUEST_TOPIC_EVENT,
         payload: event.payload,
-        topic: ReservationEventListener.REQUEST_EVENT,
       }),
     );
+
+    this.eventEmitter.emit(
+      ReservationEventListener.REQUEST_TOPIC_EVENT,
+      event.reservationId,
+    );
+  }
+
+  @OnCustomEvent(ReservationEventListener.REQUEST_TOPIC_EVENT, { async: true })
+  async handleRequestReservationSend(transactionId: number) {
+    this.logger.debug(
+      `On Handle Event - ${ReservationEventListener.REQUEST_TOPIC_EVENT}`,
+    );
+    await this.reservationFacade.sendOutbox(transactionId);
   }
 
   @OnCustomEventErrorHandler(ReservationEventListener.EVENT_GROUP)

@@ -2,7 +2,7 @@ import { BaseEntity } from './base.entity';
 import { Column } from 'typeorm';
 
 export class BaseOutboxEntity extends BaseEntity {
-  @Column({ type: 'int' })
+  @Column({ type: 'int', unique: true })
   transactionId: number;
 
   @Column({ type: 'varchar', length: 100, comment: '발신자' })

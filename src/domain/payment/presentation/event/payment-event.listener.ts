@@ -1,20 +1,24 @@
-import { Injectable } from '@nestjs/common';
+import { Controller } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ApiExcludeController } from '@nestjs/swagger';
 
 import {
   BaseEventListener,
   CustomLoggerService,
+  OnCustomEvent,
   OnCustomEventErrorHandler,
   OnSyncEvent,
 } from 'src/global';
 import { PaymentFacade } from '../../application';
-import { PayPaymentSyncEvent } from './dto';
 import { WriteOutboxCommand } from '../../doamin';
+import { PayPaymentSyncEvent } from './dto';
 
-@Injectable()
+@ApiExcludeController()
+@Controller()
 export class PaymentEventListener extends BaseEventListener {
   static readonly EVENT_GROUP = 'payment';
-  static readonly PAY_EVENT = 'payment.pay';
+  static readonly PAY_OUTBOX_EVENT = 'payment.pay.outbox';
+  static readonly PAY_TOPIC_EVENT = 'payment.pay.topic';
 
   constructor(
     private readonly logger: CustomLoggerService,
@@ -25,16 +29,32 @@ export class PaymentEventListener extends BaseEventListener {
     this.logger.setTarget(this.constructor.name);
   }
 
-  @OnSyncEvent(PaymentEventListener.PAY_EVENT)
+  @OnSyncEvent(PaymentEventListener.PAY_OUTBOX_EVENT)
   async handlePayPayment(event: PayPaymentSyncEvent) {
-    this.logger.debug(`On Handle Event - ${PaymentEventListener.PAY_EVENT}`);
-    this.paymentFacade.createOutbox(
+    this.logger.debug(
+      `On Handle Event - ${PaymentEventListener.PAY_OUTBOX_EVENT}`,
+    );
+    await this.paymentFacade.createOutbox(
       WriteOutboxCommand.from({
         transactionId: event.paymentId,
+        domainName: PaymentEventListener.PAY_OUTBOX_EVENT,
+        topic: PaymentEventListener.PAY_TOPIC_EVENT,
         payload: event.payload,
-        topic: PaymentEventListener.PAY_EVENT,
       }),
     );
+
+    this.eventEmitter.emit(
+      PaymentEventListener.PAY_TOPIC_EVENT,
+      event.paymentId,
+    );
+  }
+
+  @OnCustomEvent(PaymentEventListener.PAY_TOPIC_EVENT, { async: true })
+  async handleRequestReservationSend(transactionId: number) {
+    this.logger.debug(
+      `On Handle Event - ${PaymentEventListener.PAY_TOPIC_EVENT}`,
+    );
+    await this.paymentFacade.sendOutbox(transactionId);
   }
 
   @OnCustomEventErrorHandler(PaymentEventListener.EVENT_GROUP)

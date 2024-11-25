@@ -1,11 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { InjectEntityManager } from '@nestjs/typeorm';
+import { EntityManager } from 'typeorm';
 
-import {
-  BookingSeatEvent,
-  PerformanceEventListener,
-  PerformanceService,
-} from 'src/domain/concert/performance';
+import { PerformanceService } from 'src/domain/concert/performance';
 import { UserService } from 'src/domain/user';
 import {
   ReservationService,
@@ -17,8 +15,6 @@ import {
   ReservationEventListener,
 } from '../presentation';
 import { WriteReservationCriteria } from './criteria';
-import { InjectEntityManager } from '@nestjs/typeorm';
-import { EntityManager } from 'typeorm';
 
 @Injectable()
 export class ReservationFacade {
@@ -48,7 +44,7 @@ export class ReservationFacade {
       )(txManager);
 
       await this.eventEmitter.emitAsync(
-        ReservationEventListener.REQUEST_EVENT,
+        ReservationEventListener.REQUEST_OUTBOX_EVENT,
         RequestReservationSyncEvent.from({
           reservationId: reservation.id,
           payload: JSON.stringify(reservation),
@@ -57,32 +53,18 @@ export class ReservationFacade {
 
       return reservation.id;
     });
-
-    // // 좌석 임시 예약 이벤트
-    // this.eventEmitter.emit(
-    //   PerformanceEventListener.RESERVE_SEAT_EVENT,
-    //   ReserveSeatEvent.from({ seatId: seat.id }),
-    // );
-
-    // // 큐 만료 이벤트 발생
-    // this.eventEmitter.emit(
-    //   QueueEventListener.EXPIRE,
-    //   ExpireQueueEvent.from({ queueUid: criteria.queueUid }),
-    // );
   }
 
   async confirm(reservationId: number) {
     const reservation = await this.reservationService.confirm(reservationId);
-
-    // 좌석 예약 확정 이벤트
-    this.eventEmitter.emit(
-      PerformanceEventListener.BOOKING_SEAT_EVENT,
-      BookingSeatEvent.from({ seatId: reservation.seatId }),
-    );
     return reservation.id;
   }
 
   async createOutbox(command: WriteOutboxCommand) {
     return this.reservationService.createOutbox(command);
+  }
+
+  async sendOutbox(transactionId: number) {
+    return this.reservationService.sendOutbox(transactionId);
   }
 }

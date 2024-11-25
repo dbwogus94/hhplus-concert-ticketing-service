@@ -53,24 +53,22 @@ export class PaymentFacade {
       )(txManager);
 
       await this.eventEmitter.emitAsync(
-        PaymentEventListener.PAY_EVENT,
+        PaymentEventListener.PAY_OUTBOX_EVENT,
         PayPaymentSyncEvent.from({
           paymentId: paymentInfo.id,
           payload: JSON.stringify(paymentInfo),
         }),
       );
 
-      // // 예약 확정 이벤트
-      // this.eventEmitter.emit(
-      //   ReservationEventListener.CONFIRM_EVENT,
-      //   ConfirmReservationEvent.from({ reservationId }),
-      // );
-
       return paymentInfo;
     });
   }
 
   async createOutbox(command: WriteOutboxCommand) {
-    return this.paymentService.createOutbox(command);
+    return await this.paymentService.createOutbox(command);
+  }
+
+  async sendOutbox(transactionId: number) {
+    return await this.paymentService.sendOutbox(transactionId);
   }
 }
