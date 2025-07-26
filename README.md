@@ -7,6 +7,7 @@
 - [API 정의서](docs/3-API-정의서.md)
 - [ERD 설계서](docs/4-ERD-정의서.md)
 - [Swagger 이미지](docs/image/swagger.png)
+- [PR로 보는 문제 해결 과정](https://github.com/dbwogus94/hhplus-concert-ticketing-service/pulls?q=is%3Apr+is%3Aclosed+label%3A%22%EC%9D%BD%EA%B8%B0%2F%EC%93%B0%EA%B8%B0+%EC%84%B1%EB%8A%A5+%EA%B0%9C%EC%84%A0%22%2C%22%EC%8B%9C%EB%82%98%EB%A6%AC%EC%98%A4+%EC%84%9C%EB%B2%84+%EA%B5%AC%EC%B6%95%22+sort%3Acreated-asc)
 
 
 ## 2. 서버 환경
