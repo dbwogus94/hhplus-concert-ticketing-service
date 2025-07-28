@@ -1,14 +1,23 @@
 # 콘서트 예약 서비스
 
 ## 1. 설계 및 참고 문서
+
+### 1.1. 설계 문서
 - [마일 스톤](https://github.com/users/dbwogus94/projects/3)
 - [요구사항](docs/1-요구사항.md)
 - [시퀀스 다이어그램](docs/2-시퀀스다이어그램.md)
 - [API 정의서](docs/3-API-정의서.md)
 - [ERD 설계서](docs/4-ERD-정의서.md)
 - [Swagger 이미지](docs/image/swagger.png)
+- [동시성에 대한 분석]()
 - [PR로 보는 문제 해결 과정](https://github.com/dbwogus94/hhplus-concert-ticketing-service/pulls?q=is%3Apr+is%3Aclosed+label%3A%22%EC%9D%BD%EA%B8%B0%2F%EC%93%B0%EA%B8%B0+%EC%84%B1%EB%8A%A5+%EA%B0%9C%EC%84%A0%22%2C%22%EC%8B%9C%EB%82%98%EB%A6%AC%EC%98%A4+%EC%84%9C%EB%B2%84+%EA%B5%AC%EC%B6%95%22+sort%3Acreated-asc)
 
+### 1.2. 과제를 해결하며 작성한 보고서
+- [콘서트 서비스 인덱스 활용 보고서](https://www.notion.so/jaehyun0119/STEP-15-13e8dbc2842280d3a48ee0dbe6430988)
+- [레디스를 사용한 캐시 전략 분석 보고서](docs/STEP13-Redis-사용보고서.md)
+- [트랜잭션 처리의 한계와 해결방안 서비스 설계 보고서](https://www.notion.so/jaehyun0119/STEP-16-13e8dbc28422807b87e0d367eccf0a36)
+- [시나리오 테스트 보고서](https://www.notion.so/jaehyun0119/STEP-19-14c8dbc2842280fa851fd02d9a8ca836)
+- [가상 장애 대응 보고서](https://www.notion.so/jaehyun0119/STEP-20-14c8dbc2842280f5840ac7af706797b7)
 
 ## 2. 서버 환경
 - Programming Language: `Typescript ^5.0.0`
@@ -18,25 +27,10 @@
 - DataBase: `Mysql 8`
 - Test: `Jest ^29.5.0`
 
+## 3. 소스코드 폴더 구조
 
-## 3. domain 패키지 구조
-
-```
-src
-└── domain
-    ├── batch
-    ├── concert           # 콘서트 서비스 모듈
-    │   └── performance           
-    ├── payment           # 결제 서비스 모듈
-    ├── queue             # 대기열 서비스 모듈
-    ├── reservation       # 예약 서비스 모듈
-    └── user              # 유저 서비스 모듈
-```
-
-## 4. 상세 폴더 구조
-
-### 4.1. 전체 폴더 구조
-```
+### 3.1. src 폴더 구조
+```bash
 src/
 ├── app.module.ts           # Nestjs 루트 모듈
 ├── main.ts                 # 애플리케이션 진입점
@@ -65,22 +59,11 @@ src/
     └── batch/                # 배치 작업
         ├── presentation/       # Cron Scheduler
         └── application/        # 배치 로직 조합
-
-test/
-├── user/
-├── concert/
-├── reservation/
-├── payment/
-├── queue/
-├── fixture/               # 테스트 픽스처
-├── common/               # 공통 테스트 유틸
-└── test-container/       # 테스트 컨테이너 설정
 ```
 
-### 4.2. 도메인별 레이어 구조
+### 3.2. 도메인별 레이어 구조
 각 도메인은 Clean Architecture 패턴을 참고해서 4개 계층으로 구성됩니다.
-
-```
+```bash
 domain/{domain-name}/
 ├── presentation/               # 표현 계층
 │   ├── {domain}.controller.ts
@@ -100,12 +83,25 @@ domain/{domain-name}/
     └── {domain}-producer.ts        # Kafka Producer (선택적)
 ```
 
-## 5. 아키텍처
+### 3.3. 테스트 폴더 구조
+```bash
+test/
+├── user/
+├── concert/
+├── reservation/
+├── payment/
+├── queue/
+├── fixture/               # 테스트 픽스처
+├── common/               # 공통 테스트 유틸
+└── test-container/       # 테스트 컨테이너 설정
+```
 
-### 5.1. 전체 아키텍처
-**Clean Architecture/Hexagonal Architecture** 기반의 레이어드 아키텍처를 채택하였습니다.
+## 4. 아키텍처
 
-#### Presentation 계층
+### 4.1. 전체 아키텍처
+Clean Architecture를 참고한 방향으로 **레이어드 아키텍처**를 채택하였습니다.
+
+#### Presentation(interface) 계층
 - **REST API Controller**: 클라이언트 요청 처리 및 응답
 - **Cron Scheduler**: 배치 작업 스케줄링 (batch 도메인)
 - **Kafka Consumer**: 이벤트 소비 및 처리
@@ -128,7 +124,33 @@ domain/{domain-name}/
 - **Producer**: Kafka 메시지 발행
 - **External API**: 외부 서비스 연동
 
-### 5.2. 주요 기술 스택 및 패턴
+### 4.2. 계층별로 사용하는 데이터 객체
+
+|  | interface | application | domain | infra |
+| --- | --- | --- | --- | --- |
+| **input** | request | criteria | command | param |
+| **output** | response | result | info | entity(domain) |
+
+
+#### Presentation(interface) 계층 - `Controller`
+- HTTP에서 들어오는 요청 데이터는 `xxxRequest` DTO로 매핑합니다.
+- HTTP에서 들어오는 응답 데이터는 `xxxResponse` DTO로 매핑합니다.
+
+#### Application 계층 - `Facade`
+- (optional) 로직에서 데이터를 가공, 조합 해야한다면 `xxxCriteria` DTO로 매핑합니다.
+- (optional) 리턴되는 데이터를 가공, 조합 해야한다면 `xxxResult` DTO로 매핑합니다.
+
+#### Domain 계층 - `Service`
+> [!NOTE] Infra 계층에서 넘어온 도메인 객체를 직접 사용하는 계층이기 때문에 다른 계층에서 무분별하게 사용하지 않도록 설계합니다.
+
+- 파라미터로 넘어온 데이터는 `xxxCommand` DTO로 매핑합니다.
+- 리턴되는 데이터는 `xxxInfo` DTO로 매핑합니다.
+
+#### Infra 계층 - `Repository`
+- 파라미터로 넘어온 데이터는 `xxxParam` DTO로 매핑합니다.
+- 리턴되는 데이터는 entity(domain)로 매핑합니다.
+
+### 4.3. 주요 기술 스택 및 패턴
 
 #### 성능 최적화
 - **Redis Cache**: Look-aside 패턴으로 조회 성능 향상
@@ -150,7 +172,7 @@ domain/{domain-name}/
 - **Redis Hash**: 대기열 상세 정보 저장
 - **TTL 기반 만료**: 활성 큐 자동 만료 처리
 
-### 5.3. 동시성 제어
+### 4.4. 동시성 제어
 
 #### 낙관적 락 (Optimistic Lock)
 - **좌석 예약**: 버전 기반 충돌 감지
@@ -162,58 +184,101 @@ domain/{domain-name}/
 - **보상 트랜잭션**: 실패 시 롤백 처리
 - **Eventually Consistent**: 최종 일관성 보장
 
-## 6. Domain 객체 다이어그램
+## 5. Domain 객체 다이어그램
 
 ```mermaid
-graph TD
+classDiagram
     %% User Domain
-    subgraph "User Domain"
-        User["User<br/>name: string<br/>email: string<br/>pointId: number"]
-        Point["Point<br/>amount: number<br/>version: number<br/>+chargePoint()<br/>+usePoint()<br/>+canUsePoint()"]
-        PointHistory["PointHistory<br/>userId: number<br/>amount: number<br/>type: PointHistoryType"]
-    end
-    
+    class UserEntity {
+        +name: string
+        +email: string
+        +pointId: number
+    }
+
+    class PointEntity {
+        +amount: number
+        +version: number
+        +chargePoint(addPoint: number)
+        +usePoint(subAmount: number)
+        +canUsePoint(subAmount: number): boolean
+    }
+
+    class PointHistoryEntity {
+        +userId: number
+        +amount: number
+        +type: PointHistoryType
+    }
+
     %% Concert Domain
-    subgraph "Concert Domain"
-        Concert["Concert<br/>name: string<br/>description: string<br/>startDate: string<br/>endDate: string"]
-        Performance["Performance<br/>openDate: string<br/>startAt: Date<br/>concertId: number"]
-        Seat["Seat<br/>position: number<br/>amount: number<br/>status: SeatStatus<br/>performanceId: number<br/>version: number<br/>+reserve()<br/>+booking()"]
-    end
-    
+    class ConcertEntity {
+        +name: string
+        +description: string
+        +startDate: string
+        +endDate: string
+    }
+
+    class PerformanceEntity {
+        +concertId: number
+        +openDate: string
+        +startAt: Date
+    }
+
+    class SeatEntity {
+        +performanceId: number
+        +position: number
+        +amount: number
+        +status: SeatStatus
+        +version: number
+        +reserve()
+        +booking()
+        +isReservable: boolean
+        +isBookComplete: boolean
+    }
+
     %% Reservation Domain
-    subgraph "Reservation Domain"
-        Reservation["Reservation<br/>userId: number<br/>seatId: number<br/>price: number<br/>status: ReservationStatus<br/>+confirm()"]
-        ReservationOutbox["ReservationOutbox<br/>트랜잭션 ID 기반<br/>아웃박스 패턴"]
-    end
-    
-    %% Payment Domain
-    subgraph "Payment Domain"
-        Payment["Payment<br/>userId: number<br/>reservationId: number<br/>payPrice: number"]
-        PaymentOutbox["PaymentOutbox<br/>트랜잭션 ID 기반<br/>아웃박스 패턴"]
-    end
-    
+    class ReservationEntity {
+        +userId: number
+        +seatId: number
+        +price: number
+        +status: ReservationStatus
+        +confirm()
+        +isRequest: boolean
+        +isConfirm: boolean
+    }
+
+    %% Payment Domain  
+    class PaymentEntity {
+        +userId: number
+        +reservationId: number
+        +amount: number
+        +status: PaymentStatus
+    }
+
     %% Queue Domain
-    subgraph "Queue Domain"
-        WaitQueue["WaitQueue<br/>uid: string<br/>userId: number<br/>concertId: number<br/>status: QueueStatus<br/>timestamp: number<br/>waitingNumber: number"]
-        ActiveQueue["ActiveQueue<br/>활성 큐 관리"]
-    end
-    
+    class WaitQueueDomain {
+        +uid: string
+        +userId: number
+        +concertId: number
+        +status: QueueStatus
+        +timestamp: number
+        +waitingNumber: number
+        +generateUUIDv4(): string
+    }
+
     %% Relationships
-    User -->|"1:1"| Point
-    User -->|"1:N"| PointHistory
-    User -->|"1:N"| Reservation
-    User -->|"1:N"| Payment
-    User -->|"1:N"| WaitQueue
+    UserEntity "1" -- "1" PointEntity
+    UserEntity "1" -- "*" PointHistoryEntity
+    UserEntity "1" -- "*" ReservationEntity
+    UserEntity "1" -- "*" WaitQueueDomain
     
-    Concert -->|"1:N"| Performance
-    Performance -->|"1:N"| Seat
-    Seat -->|"1:1"| Reservation
-    Reservation -->|"1:1"| Payment
+    ConcertEntity "1" -- "*" PerformanceEntity
+    PerformanceEntity "1" -- "*" SeatEntity
     
-    Concert -->|"1:N"| WaitQueue
+    SeatEntity "1" -- "1" ReservationEntity
+    ReservationEntity "1" -- "1" PaymentEntity
 ```
 
-### 6.1. 주요 도메인 객체 설명
+### 5.1. 주요 도메인 객체 설명
 
 #### User Domain
 - **User**: 사용자 기본 정보
@@ -235,10 +300,8 @@ graph TD
 
 #### Queue Domain
 - **WaitQueue**: 대기열 정보 (Redis 관리)
-- **ActiveQueue**: 활성 큐 정보 (Redis 관리)
 
-## 7. 동시성 분석
-
+## 6. 시나리오 동시성 분석
 
 <details> 
 <summary>1. 콘서트 좌석 점유</summary>
