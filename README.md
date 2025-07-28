@@ -19,25 +19,225 @@
 - Test: `Jest ^29.5.0`
 
 
-## 3. 패키지 구조
-*상세한 패키지 구조는 아직 고민하고 있습니다.
+## 3. domain 패키지 구조
+
 ```
 src
 └── domain
+    ├── batch
     ├── concert           # 콘서트 서비스 모듈
-    |   ├── performance
-    │   └── seat           
-    ├── reservation       # 예약 서비스 모듈
-    │   └── payment
+    │   └── performance           
+    ├── payment           # 결제 서비스 모듈
     ├── queue             # 대기열 서비스 모듈
+    ├── reservation       # 예약 서비스 모듈
     └── user              # 유저 서비스 모듈
-        └── point         
 ```
 
+## 4. 상세 폴더 구조
 
-## 4. 동시성 분석
+### 4.1. 전체 폴더 구조
+```
+src/
+├── app.module.ts           # Nestjs 루트 모듈
+├── main.ts                 # 애플리케이션 진입점
+├── common/                 # 공통 유틸리티
+│   ├── database/             # DB 설정 및 기본 엔티티
+│   ├── exception/            # 예외 처리
+│   ├── interceptor/          # 인터셉터
+│   ├── middleware/           # 미들웨어
+│   └── decorator/            # 커스텀 데코레이터
+├── global/                 # 전역 설정
+│   ├── aop/                  # AOP 모듈
+│   ├── logger/               # 로깅 설정
+│   ├── redis/                # Redis 설정
+│   └── event-emitter/        # 이벤트 에미터
+└── domain/                 # 도메인별 비즈니스 로직
+    ├── user/                 # 사용자 도메인
+    │   ├── presentation/       # REST API Controller
+    │   ├── application/        # Facade (Use Case 조합)
+    │   ├── domain/             # 비즈니스 로직 Service
+    │   └── infra/              # Repository 구현체
+    ├── concert/              # 콘서트 도메인
+    │   └── performance/        # 공연 서브도메인
+    ├── reservation/          # 예약 도메인
+    ├── payment/              # 결제 도메인
+    ├── queue/                # 대기열 도메인
+    └── batch/                # 배치 작업
+        ├── presentation/       # Cron Scheduler
+        └── application/        # 배치 로직 조합
 
-### 4.1. 락이 필요한 로직 분석
+test/
+├── user/
+├── concert/
+├── reservation/
+├── payment/
+├── queue/
+├── fixture/               # 테스트 픽스처
+├── common/               # 공통 테스트 유틸
+└── test-container/       # 테스트 컨테이너 설정
+```
+
+### 4.2. 도메인별 레이어 구조
+각 도메인은 Clean Architecture 패턴을 참고해서 4개 계층으로 구성됩니다.
+
+```
+domain/{domain-name}/
+├── presentation/               # 표현 계층
+│   ├── {domain}.controller.ts
+│   ├── {domain}.consumer.ts      # Kafka Consumer (선택적)
+│   └── dto/                      # Request/Response DTO
+├── application/                  # 응용 계층
+│   └── {domain}.facade.ts        # Use Case 조합
+├── domain/                       # 도메인 계층
+│   ├── {domain}.service.ts
+│   ├── model/
+│   │   ├── {entity}.entity.ts  # 도메인 객체
+│   │   └── enum/
+│   └── dto/                      # Domain DTO
+└── infra/                      # 인프라 계층
+    ├── {domain}.repository.ts      # Interface
+    ├── {domain}-core.repository.ts # Implementation
+    └── {domain}-producer.ts        # Kafka Producer (선택적)
+```
+
+## 5. 아키텍처
+
+### 5.1. 전체 아키텍처
+**Clean Architecture/Hexagonal Architecture** 기반의 레이어드 아키텍처를 채택하였습니다.
+
+#### Presentation 계층
+- **REST API Controller**: 클라이언트 요청 처리 및 응답
+- **Cron Scheduler**: 배치 작업 스케줄링 (batch 도메인)
+- **Kafka Consumer**: 이벤트 소비 및 처리
+- **Guard**: JWT 토큰 검증 및 대기열 상태 확인
+- **Interceptor**: 응답 포매팅 및 예외 처리
+
+#### Application 계층  
+- **Facade**: 여러 도메인 Service를 조합하여 Use Case 구현
+- **DTO**: criteria 네이밍으로 데이터 전송 객체 관리
+- **Transaction Management**: 트랜잭션 경계 설정
+
+#### Domain 계층
+- **Service**: 핵심 비즈니스 로직 처리
+- **Entity**: 도메인 객체 및 비즈니스 규칙
+- **Domain Method**: 엔티티 내부의 비즈니스 메서드
+- **Repository Interface**: 데이터 접근 추상화
+
+#### Infrastructure 계층
+- **Repository 구현체**: TypeORM 기반 데이터 접근
+- **Producer**: Kafka 메시지 발행
+- **External API**: 외부 서비스 연동
+
+### 5.2. 주요 기술 스택 및 패턴
+
+#### 성능 최적화
+- **Redis Cache**: Look-aside 패턴으로 조회 성능 향상
+- **Connection Pool**: DB 커넥션 최적화
+- **Optimistic Lock**: 좌석 예약, 포인트 충전, 결제에 적용
+
+#### 이벤트 기반 아키텍처
+- **Outbox Pattern**: 트랜잭션과 이벤트 발행의 일관성 보장
+- **Kafka**: 비동기 메시지 처리 및 도메인 간 분리
+- **Event Sourcing**: 이벤트 재처리 및 보상 트랜잭션
+
+#### 캐싱 전략
+- **@Cache() Decorator**: AOP 기반 선언적 캐싱
+- **Custom Redis Store**: ioredis 기반 커스텀 캐시 구현
+- **TTL 관리**: 도메인별 적절한 만료 시간 설정
+
+#### 대기열 시스템
+- **Redis Sorted Set**: 대기 순번 관리
+- **Redis Hash**: 대기열 상세 정보 저장
+- **TTL 기반 만료**: 활성 큐 자동 만료 처리
+
+### 5.3. 동시성 제어
+
+#### 낙관적 락 (Optimistic Lock)
+- **좌석 예약**: 버전 기반 충돌 감지
+- **포인트 충전**: 동시 요청 시 1건만 성공
+- **결제 처리**: 중복 결제 방지
+
+#### 분산 트랜잭션
+- **Saga Pattern**: 이벤트 기반 분산 트랜잭션
+- **보상 트랜잭션**: 실패 시 롤백 처리
+- **Eventually Consistent**: 최종 일관성 보장
+
+## 6. Domain 객체 다이어그램
+
+```mermaid
+graph TD
+    %% User Domain
+    subgraph "User Domain"
+        User["User<br/>name: string<br/>email: string<br/>pointId: number"]
+        Point["Point<br/>amount: number<br/>version: number<br/>+chargePoint()<br/>+usePoint()<br/>+canUsePoint()"]
+        PointHistory["PointHistory<br/>userId: number<br/>amount: number<br/>type: PointHistoryType"]
+    end
+    
+    %% Concert Domain
+    subgraph "Concert Domain"
+        Concert["Concert<br/>name: string<br/>description: string<br/>startDate: string<br/>endDate: string"]
+        Performance["Performance<br/>openDate: string<br/>startAt: Date<br/>concertId: number"]
+        Seat["Seat<br/>position: number<br/>amount: number<br/>status: SeatStatus<br/>performanceId: number<br/>version: number<br/>+reserve()<br/>+booking()"]
+    end
+    
+    %% Reservation Domain
+    subgraph "Reservation Domain"
+        Reservation["Reservation<br/>userId: number<br/>seatId: number<br/>price: number<br/>status: ReservationStatus<br/>+confirm()"]
+        ReservationOutbox["ReservationOutbox<br/>트랜잭션 ID 기반<br/>아웃박스 패턴"]
+    end
+    
+    %% Payment Domain
+    subgraph "Payment Domain"
+        Payment["Payment<br/>userId: number<br/>reservationId: number<br/>payPrice: number"]
+        PaymentOutbox["PaymentOutbox<br/>트랜잭션 ID 기반<br/>아웃박스 패턴"]
+    end
+    
+    %% Queue Domain
+    subgraph "Queue Domain"
+        WaitQueue["WaitQueue<br/>uid: string<br/>userId: number<br/>concertId: number<br/>status: QueueStatus<br/>timestamp: number<br/>waitingNumber: number"]
+        ActiveQueue["ActiveQueue<br/>활성 큐 관리"]
+    end
+    
+    %% Relationships
+    User -->|"1:1"| Point
+    User -->|"1:N"| PointHistory
+    User -->|"1:N"| Reservation
+    User -->|"1:N"| Payment
+    User -->|"1:N"| WaitQueue
+    
+    Concert -->|"1:N"| Performance
+    Performance -->|"1:N"| Seat
+    Seat -->|"1:1"| Reservation
+    Reservation -->|"1:1"| Payment
+    
+    Concert -->|"1:N"| WaitQueue
+```
+
+### 6.1. 주요 도메인 객체 설명
+
+#### User Domain
+- **User**: 사용자 기본 정보
+- **Point**: 포인트 관리 (낙관적 락 적용)
+- **PointHistory**: 포인트 사용 이력
+
+#### Concert Domain  
+- **Concert**: 콘서트 정보
+- **Performance**: 공연 회차 정보
+- **Seat**: 좌석 정보 (낙관적 락 적용)
+
+#### Reservation Domain
+- **Reservation**: 예약 정보
+- **ReservationOutbox**: 예약 이벤트 아웃박스
+
+#### Payment Domain
+- **Payment**: 결제 정보  
+- **PaymentOutbox**: 결제 이벤트 아웃박스
+
+#### Queue Domain
+- **WaitQueue**: 대기열 정보 (Redis 관리)
+- **ActiveQueue**: 활성 큐 정보 (Redis 관리)
+
+## 7. 동시성 분석
 
 
 <details> 
@@ -448,7 +648,7 @@ async payment(criteria: WritePaymentCriteria): Promise<GetPaymentInfo> {
 3. 20개의 요청은 "1. 예약 확인"을 조회합니다. 이때 20의 트랜잭션은 "예약신청" 상태의 예약을 조회에 성공합니다.
 4. 이후 X-lock가 적용된 "2 포인트 사용"를 만나고 하나의 커넥션만 락을 점유합니다. (락을 점유하지 못한 커넥션은 모두 대기합니다.)
 5. 락을 점유하고 있던 트랜잭션이 모두 수행되면 `commit` 되고 락을 반환합니다. 
-6. 이제 그 다음 커넥션이 4 ~ 5를 반복합니다. 즉, 최초 진입한 20개의 커넥션에서 수행한 트랜잭션은 모두 결제를 생성합니다.
+6. 이제 그 다음 커넥션이 모두 에러 처리가 되었기 때문에 로직이 수행되지 않습니다.
 7. 이후 들어오는 요청은 "1. 예약 확인"에서 조회에 실패하기 때문에 최종적을 20개의 결제가 생성됩니다.
 
 이 테스트를 통해 비관적 락이 구현이 조금 더 까다로운 이유를 알 수 있었습니다. 
